@@ -1,17 +1,20 @@
-import { Container, Graphics, Sprite } from 'pixi.js';
+import { AnimatedSprite, Container, Graphics } from 'pixi.js';
 import { posKey } from '../engine/arena';
 import { UNIT_DEFS } from '../engine/units';
-import type { Arena, GameState, Pos, Unit } from '../engine/types';
+import type { Arena, GameState, Pos, Team, Unit } from '../engine/types';
 import { EMPTY_OVERLAY } from '../game/selectors';
 import type { Overlay } from '../game/selectors';
-import { assetMap } from './assetMap';
+import { unitArt } from './assetMap';
+import type { LoadedArt, UnitArt } from './assetMap';
 import { TILE_H, TILE_W, depthOf, toScreen } from './iso';
-import { SPRITE_SCALE } from './spriteFactory';
 import { drawProp, drawTerrain } from './terrain';
 
 export interface UnitView {
   root: Container;
-  body: Sprite;
+  body: AnimatedSprite;
+  art: UnitArt;
+  /** tinta a riposo (squadra + già attivato); gli effetti la ripristinano */
+  tint: number;
   bar: Graphics;
   /** copia locale usata per disegnare durante le animazioni */
   unit: Unit;
@@ -20,6 +23,13 @@ export interface UnitView {
 export const UNIT_DEPTH_OFFSET = 5;
 const HW = TILE_W / 2;
 const HH = TILE_H / 2;
+export const IDLE_SPEED = 0.1;
+
+/** Il nemico è tinto di rosso; i soldati già attivati sono più scuri. */
+export function unitTint(team: Team, done: boolean): number {
+  if (team === 'ai') return done ? 0x8f5a55 : 0xff9a8a;
+  return done ? 0x8a8a9a : 0xffffff;
+}
 
 export class BattleScene {
   readonly root = new Container();
@@ -31,7 +41,10 @@ export class BattleScene {
   private readonly views = new Map<string, UnitView>();
   private overlay: Overlay = EMPTY_OVERLAY;
 
-  constructor(arena: Arena) {
+  private readonly art: LoadedArt;
+
+  constructor(arena: Arena, art: LoadedArt) {
+    this.art = art;
     this.actors.sortableChildren = true;
     this.root.addChild(this.world);
     this.world.addChild(drawTerrain(arena), this.overlayLayer, this.hoverLayer, this.actors, this.fx);
@@ -52,7 +65,8 @@ export class BattleScene {
       this.placeAt(view, unit.pos);
       view.root.alpha = 1;
       view.body.position.set(0, 0);
-      view.body.tint = unit.team === state.activeTeam && unit.stage === 'done' ? 0x8a8a9a : 0xffffff;
+      view.tint = unitTint(unit.team, unit.team === state.activeTeam && unit.stage === 'done');
+      view.body.tint = view.tint;
       this.drawBar(view);
     }
   }
@@ -64,17 +78,20 @@ export class BattleScene {
   }
 
   face(view: UnitView, dx: number): void {
-    if (dx !== 0) view.body.scale.x = Math.sign(dx) * SPRITE_SCALE;
+    if (dx !== 0) view.body.scale.x = Math.sign(dx) * (view.art.facesLeft ? -1 : 1) * view.art.scale;
   }
 
   drawBar(view: UnitView): void {
     const max = UNIT_DEFS[view.unit.archetype].maxHp;
     const w = 30;
     const g = view.bar;
+    const { art } = view;
+    // altezza testa: dai piedi (ancora) al bordo alto, meno il margine vuoto dei frame delle sheet
+    const top = -Math.round(view.body.texture.height * view.body.anchor.y * art.scale - (art.attack.length > 0 ? 5 * art.scale : 0) + 8);
     g.clear();
-    g.rect(-w / 2 - 1, -72, w + 2, 6).fill(0x140e14);
-    g.rect(-w / 2, -71, Math.max(0, (w * view.unit.hp) / max), 4).fill(view.unit.team === 'player' ? 0x6fb35a : 0xd0533f);
-    if (view.unit.guard > 0) g.rect(-w / 2, -75, Math.min(w, view.unit.guard * 5), 2).fill(0x7fb2ff);
+    g.rect(-w / 2 - 1, top, w + 2, 6).fill(0x140e14);
+    g.rect(-w / 2, top + 1, Math.max(0, (w * view.unit.hp) / max), 4).fill(view.unit.team === 'player' ? 0x6fb35a : 0xd0533f);
+    if (view.unit.guard > 0) g.rect(-w / 2, top - 3, Math.min(w, view.unit.guard * 5), 2).fill(0x7fb2ff);
   }
 
   setOverlay(overlay: Overlay): void {
@@ -122,13 +139,17 @@ export class BattleScene {
     const root = new Container();
     // ombra morbida a terra: fa poggiare il soldato sul terreno, non è una base
     const shadow = new Graphics().ellipse(0, 0, 13, 4).fill({ color: 0x000000, alpha: 0.3 });
-    const body = new Sprite(assetMap.unit(unit.team, unit.archetype));
+    const art = unitArt(unit.team, unit.archetype, this.art);
+    const body = new AnimatedSprite({ textures: art.idle, animationSpeed: IDLE_SPEED, loop: true, updateAnchor: true });
     body.anchor.set(0.5, 1);
-    body.scale.set(unit.team === 'ai' ? -SPRITE_SCALE : SPRITE_SCALE, SPRITE_SCALE);
+    const right = unit.team === 'ai' ? -1 : 1;
+    body.scale.set(right * (art.facesLeft ? -1 : 1) * art.scale, art.scale);
+    body.tint = unitTint(unit.team, false);
+    body.play();
     const bar = new Graphics();
     root.addChild(shadow, body, bar);
     this.actors.addChild(root);
-    const view: UnitView = { root, body, bar, unit: { ...unit, pos: { ...unit.pos } } };
+    const view: UnitView = { root, body, art, tint: body.tint, bar, unit: { ...unit, pos: { ...unit.pos } } };
     this.views.set(unit.id, view);
     return view;
   }

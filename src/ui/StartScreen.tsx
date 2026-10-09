@@ -53,6 +53,9 @@ export function StartScreen() {
             <li>Esc annulla la selezione.</li>
           </ul>
         </section>
+        <footer className="start__credits">
+          Sprite dei personaggi © SQUARE ENIX CO., LTD. Tutti i diritti riservati. Progetto didattico senza scopo di lucro.
+        </footer>
       </div>
     </div>
   );

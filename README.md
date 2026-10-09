@@ -43,13 +43,13 @@ npm run build    # build di produzione in dist/
 
 ## Asset provvisori
 
-Tutta la grafica è generata da codice ed è **provvisoria**:
+La grafica è **provvisoria**:
 
-- soldati: matrici di pixel 12×16 in `src/render/spriteFactory.ts`;
+- soldati: sprite sheet di Final Fantasy Brave Exvius in `public/sprites/` (idle animato e frame d'attacco), descritte in `src/render/spriteManifest.ts` e caricate da `src/render/assetMap.ts`. Gli sprite procedurali 12×16 di `src/render/spriteFactory.ts` restano come ripiego automatico se una sheet non si carica;
 - terreno e oggetti: `src/render/terrain.ts`;
 - luci, braci e vignettatura: `src/render/effects.ts`.
 
-Per sostituire gli sprite basta modificare `src/render/assetMap.ts`, che deve restituire texture con i piedi sul bordo inferiore. Le regole non cambiano.
+Per cambiare gli sprite basta modificare il manifest (e le immagini in `public/sprites/`). Le regole non cambiano.
 
 Il riferimento stilistico è `docs/references/battlefield-reference.png`.
 
@@ -60,3 +60,7 @@ Il riferimento stilistico è `docs/references/battlefield-reference.png`.
 - L'AI difficile usa una ricerca limitata, non un minimax completo. Se scatta il tetto di tempo, la scelta può dipendere dalla velocità della macchina.
 - L'ordinamento in profondità della tenda (2×2) è approssimato.
 - Le carte Carica e Marcia forzata non si combinano mai, per via del limite di una carta per fase.
+
+## Copyright
+
+Sprite dei personaggi © SQUARE ENIX CO., LTD. Tutti i diritti riservati. Progetto didattico senza scopo di lucro.

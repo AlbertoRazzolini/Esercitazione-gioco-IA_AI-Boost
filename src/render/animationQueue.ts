@@ -4,7 +4,8 @@ import { CARD_DEFS } from '../engine/cards';
 import type { CardId, GameEvent, GameState, Pos } from '../engine/types';
 import type { Effects } from './effects';
 import { WORLD_W, toScreen } from './iso';
-import type { BattleScene } from './scene';
+import { IDLE_SPEED } from './scene';
+import type { BattleScene, UnitView } from './scene';
 import { lerp, tween } from './tween';
 
 const HEAD = 70;
@@ -89,8 +90,28 @@ export class Animator {
     const sy = view.root.y;
     const dx = (target.root.x - sx) * 0.4;
     const dy = (target.root.y - sy) * 0.4;
+    const anim = this.attackFrames(view, 0.3);
     await tween(this.ticker, 90, (k) => view.root.position.set(sx + dx * k, sy + dy * k));
     await tween(this.ticker, 140, (k) => view.root.position.set(sx + dx * (1 - k), sy + dy * (1 - k)));
+    await anim;
+  }
+
+  /** Riproduce una volta i frame d'attacco (se esistono) e poi torna all'idle. Non resta mai appeso. */
+  private async attackFrames(view: UnitView, speed: number): Promise<void> {
+    const frames = view.art.attack;
+    if (frames.length === 0) return;
+    const body = view.body;
+    body.textures = frames;
+    body.loop = false;
+    body.animationSpeed = speed;
+    body.play();
+    const ms = Math.min(1000, (frames.length / (speed * 60)) * 1000) + 60;
+    await tween(this.ticker, ms, () => undefined);
+    if (body.destroyed) return;
+    body.textures = view.art.idle;
+    body.loop = true;
+    body.animationSpeed = IDLE_SPEED;
+    body.play();
   }
 
   private async shoot(attackerId: string, targetId: string): Promise<void> {
@@ -100,12 +121,16 @@ export class Animator {
     this.scene.face(view, target.root.x - view.root.x);
     const from = { x: view.root.x, y: view.root.y - 34 };
     const to = { x: target.root.x, y: target.root.y - 30 };
+    const anim = this.attackFrames(view, 0.4);
+    // la freccia parte a metà della tensione dell'arco
+    if (view.art.attack.length > 0) await tween(this.ticker, 380, () => undefined);
     const bolt = new Graphics().rect(-7, -1, 14, 2).fill(0xe8dcc0).rect(5, -2, 3, 4).fill(0x9aa0b0);
     bolt.rotation = Math.atan2(to.y - from.y, to.x - from.x);
     bolt.position.set(from.x, from.y);
     this.scene.fx.addChild(bolt);
     await tween(this.ticker, 220, (k) => bolt.position.set(lerp(from.x, to.x, k), lerp(from.y, to.y, k)));
     bolt.destroy();
+    await anim;
   }
 
   private async hit(id: string, amount: number, absorbed: number): Promise<void> {
@@ -123,7 +148,7 @@ export class Animator {
       view.body.x = Math.sin(k * Math.PI * 6) * 3 * (1 - k);
     });
     view.body.x = 0;
-    view.body.tint = 0xffffff;
+    view.body.tint = view.tint;
   }
 
   private async guard(id: string, amount: number): Promise<void> {
