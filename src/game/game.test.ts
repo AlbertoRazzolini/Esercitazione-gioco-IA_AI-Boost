@@ -67,13 +67,13 @@ describe('store e thunk', () => {
   it('clic: seleziona, mostra l\'overlay e muove', async () => {
     const store = makeStore();
     store.dispatch(startGame(42));
-    await store.dispatch(clickCell({ x: 1, y: 3 }));
+    await store.dispatch(clickCell({ x: 2, y: 3 }));
     expect(store.getState().game.selectedUnitId).toBe('player-guardian');
     const overlay = computeOverlay(store.getState().game);
-    expect(overlay.reachable).toContainEqual({ x: 1, y: 2 });
-    await store.dispatch(clickCell({ x: 1, y: 2 }));
+    expect(overlay.reachable).toContainEqual({ x: 2, y: 2 });
+    await store.dispatch(clickCell({ x: 2, y: 2 }));
     const g = store.getState().game.game!.units.find((u) => u.id === 'player-guardian')!;
-    expect(g.pos).toEqual({ x: 1, y: 2 });
+    expect(g.pos).toEqual({ x: 2, y: 2 });
   });
 
   it('overlay vuoto durante busy e fuori turno', () => {

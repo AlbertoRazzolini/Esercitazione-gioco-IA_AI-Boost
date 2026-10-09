@@ -6,7 +6,7 @@ import type { GameState, Team, Unit } from '../engine/types';
 export const WEIGHTS = {
   alive: 15,
   guard: 0.5,
-  threat: 0.6,
+  threat: 0.4,
   approach: 0.3,
   crossbowGood: 2,
   crossbowAdjacent: 4,

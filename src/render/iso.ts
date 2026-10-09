@@ -2,9 +2,9 @@ import type { Pos } from '../engine/types';
 
 export const TILE_W = 64;
 export const TILE_H = 32;
-export const WORLD_W = 680;
-export const WORLD_H = 430;
-export const ORIGIN = { x: 308, y: 100 };
+export const WORLD_W = 760;
+export const WORLD_H = 470;
+export const ORIGIN = { x: 328, y: 100 };
 
 /** Centro del rombo della cella (anche con coordinate frazionarie, per le interpolazioni). */
 export function toScreen(p: { x: number; y: number }): { x: number; y: number } {

@@ -1,10 +1,11 @@
 import { describe, expect, it } from 'vitest';
+import { ARENA_HEIGHT, ARENA_WIDTH } from '../engine/arena';
 import { WORLD_H, WORLD_W, depthOf, toCell, toScreen } from './iso';
 
 describe('iso', () => {
   it('andata e ritorno su tutte le celle', () => {
-    for (let y = 0; y < 8; y++) {
-      for (let x = 0; x < 10; x++) {
+    for (let y = 0; y < ARENA_HEIGHT; y++) {
+      for (let x = 0; x < ARENA_WIDTH; x++) {
         const s = toScreen({ x, y });
         expect(toCell(s.x, s.y)).toEqual({ x, y });
       }
@@ -18,7 +19,12 @@ describe('iso', () => {
   });
 
   it('la mappa intera sta nel mondo', () => {
-    for (const p of [{ x: -0.5, y: 7.5 }, { x: 9.5, y: -0.5 }, { x: -0.5, y: -0.5 }, { x: 9.5, y: 7.5 }]) {
+    for (const p of [
+      { x: -0.5, y: ARENA_HEIGHT - 0.5 },
+      { x: ARENA_WIDTH - 0.5, y: -0.5 },
+      { x: -0.5, y: -0.5 },
+      { x: ARENA_WIDTH - 0.5, y: ARENA_HEIGHT - 0.5 },
+    ]) {
       const s = toScreen(p);
       expect(s.x).toBeGreaterThanOrEqual(0);
       expect(s.x).toBeLessThanOrEqual(WORLD_W);

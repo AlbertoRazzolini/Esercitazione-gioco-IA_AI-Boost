@@ -32,10 +32,10 @@ Nello store non entrano oggetti PixiJS, timer, promise o funzioni.
 
 ### 4.1 Arena
 
-Griglia logica 10 colonne × 8 righe, coordinate intere `{x, y}`. Ogni cella ha un tipo di terreno (solo estetico: erba, terra, fango, ghiaia) e un eventuale oggetto:
+Griglia logica 12 colonne × 9 righe (4:3), coordinate intere `{x, y}`. Ogni cella ha un tipo di terreno (solo estetico: erba, terra, fango, ghiaia) e un eventuale oggetto:
 
-- **solido** (blocca movimento e linea di vista): tenda 2×2, rudere, bracieri 1×1 (emettono luce);
-- **decorativo** (attraversabile, non blocca): rocce, erba alta.
+- **solido** (blocca movimento e linea di vista): tenda 2×2, rovina 2×2, carro 2×1, staccionata 2×1, due casse 1×1, due bracieri 1×1 (emettono luce). Disposizione simmetrica per punto (x,y) ↔ (11−x, 8−y), con gruppi sparsi: nessun gruppo tocca un altro, diagonali comprese;
+- **decorativo** (attraversabile, non blocca): rocce, erba alta (tipi previsti ma al momento non usati).
 
 Il giocatore parte sulle colonne di sinistra, l'AI su quelle di destra, in posizioni fisse definite in `arena.ts`.
 

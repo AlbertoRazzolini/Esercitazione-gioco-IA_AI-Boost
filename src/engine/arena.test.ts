@@ -6,9 +6,11 @@ import { makeState, unit } from './testUtils';
 describe('arena', () => {
   const arena = createArena();
 
-  it('ha dimensioni 10x8 e terreno completo', () => {
-    expect(arena.terrain).toHaveLength(8);
-    arena.terrain.forEach((row) => expect(row).toHaveLength(10));
+  it('ha dimensioni 12x9 e terreno completo', () => {
+    expect(arena.width).toBe(12);
+    expect(arena.height).toBe(9);
+    expect(arena.terrain).toHaveLength(9);
+    arena.terrain.forEach((row) => expect(row).toHaveLength(12));
     arena.terrain.flat().forEach((t) => expect(t).toBeDefined());
   });
 
@@ -24,9 +26,9 @@ describe('arena', () => {
   it('contiene gli ostacoli solidi previsti', () => {
     const kinds = arena.props.filter((p) => p.solid).map((p) => p.kind).sort();
     expect(kinds).toEqual(['brazier', 'brazier', 'cart', 'crates', 'crates', 'fence', 'ruin', 'tent']);
-    expect(isSolid(arena, { x: 4, y: 1 })).toBe(true); // tenda
-    expect(isSolid(arena, { x: 5, y: 6 })).toBe(true); // rovina
-    expect(isSolid(arena, { x: 2, y: 3 })).toBe(true); // braciere
+    expect(isSolid(arena, { x: 5, y: 1 })).toBe(true); // tenda
+    expect(isSolid(arena, { x: 6, y: 7 })).toBe(true); // rovina
+    expect(isSolid(arena, { x: 3, y: 3 })).toBe(true); // braciere
   });
 
   it('gli ostacoli stanno nella mappa e non si sovrappongono', () => {
@@ -36,6 +38,18 @@ describe('arena', () => {
         expect(inBounds(arena, cell)).toBe(true);
         expect(seen.has(posKey(cell))).toBe(false);
         seen.add(posKey(cell));
+      }
+    }
+  });
+
+  it('gruppi di ostacoli distinti non sono mai adiacenti (diagonali comprese)', () => {
+    for (let i = 0; i < arena.props.length; i++) {
+      for (let j = i + 1; j < arena.props.length; j++) {
+        for (const a of arena.props[i].cells) {
+          for (const b of arena.props[j].cells) {
+            expect(Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y))).toBeGreaterThan(1);
+          }
+        }
       }
     }
   });
