@@ -1,67 +1,99 @@
 # Bannerfall
 
-Tactical RPG isometrico a turni nel browser: tre soldati contro tre, carte-ordine e un'AI a tre livelli.
+Tactical RPG isometrico a turni, giocabile nel browser. Guidi tre soldati contro tre nemici su un accampamento medievale devastato dalla guerra, aiutandoti con carte-ordine. Il nemico è controllato da un'AI con tre livelli di difficoltà che si sbloccano a mano a mano che vinci.
+
+Progetto didattico: tutto gira nel browser, senza server.
 
 ## Avvio
+
+Serve Node.js. Poi:
 
 ```bash
 npm install
 npm run dev      # sviluppo, http://localhost:5173
-npm test         # test del motore e delle AI
+npm test         # test del motore, delle AI e della grafica (parti pure)
 npm run build    # build di produzione in dist/
+npm run lint
 ```
 
 ## Come si gioca
 
-- Clicca un tuo soldato, poi una casella evidenziata per muoverlo (una volta per attivazione).
-- Clicca un nemico evidenziato in rosso per attaccarlo; il pulsante dell'abilità attiva la modalità abilità.
-- Ogni soldato agisce una volta per fase. "Fine fase" passa il turno al nemico.
-- Una carta-ordine per fase: selezionala e clicca un bersaglio evidenziato in viola.
-- Vince chi elimina tutte le unità avversarie.
+1. Scegli la difficoltà e premi **Inizia la battaglia**.
+2. Clicca un tuo soldato: si evidenziano le caselle dove può muoversi (giallo) e i nemici che può colpire (rosso).
+3. Clicca una casella per muoverlo (una volta per attivazione), poi un nemico per attaccarlo. Il pulsante dell'abilità attiva la modalità abilità.
+4. Ogni soldato agisce **una volta per fase**. Quando hai finito, o vuoi saltare le unità rimaste, premi **Fine fase**: gioca il nemico.
+5. Una **carta-ordine per fase**: selezionala e clicca un bersaglio evidenziato in viola. Una carta disattivata spiega perché non si può usare.
+6. Vince chi elimina tutte le unità avversarie. `Esc` annulla la selezione.
 
-## Regole in breve
+### Livelli
+
+| Livello | Come gioca il nemico |
+|---|---|
+| Recluta | Cerca il colpo più facile e a volte sbaglia. |
+| Veterano | Valuta minacce e posizioni, usa le carte con criterio. |
+| Comandante | Prevede la tua risposta prima di muovere. |
+
+All'inizio è sbloccato solo **Recluta**. Vincere sblocca il livello successivo (e propone di affrontarlo subito). I progressi restano nel browser (`localStorage`).
+
+## Regole
 
 | Unità | HP | Mov | Attacco | Abilità |
 |---|---|---|---|---|
-| Guardiano | 12 | 3 | mischia 3 | Parata: +3 guardia |
-| Esploratore | 8 | 4 | mischia 3 | Fendente coordinato: 4 danni, 5 con un altro alleato adiacente al bersaglio |
-| Balestriere | 7 | 3 | distanza 2–4, 2 danni | Tiro mirato: 3 danni a distanza 2–5, ricarica 2 |
+| Guardiano | 12 | 3 | mischia, 3 danni | **Parata**: 3 punti guardia fino alla prossima fase |
+| Esploratore | 8 | 4 | mischia, 3 danni | **Fendente coordinato**: 4 danni, 5 se un altro alleato è adiacente al bersaglio |
+| Balestriere | 7 | 3 | distanza 2–4, 2 danni | **Tiro mirato**: 3 danni a distanza 2–5, poi salta la fase successiva |
 
-- Distanze Manhattan, movimento in 4 direzioni.
-- Linea di vista bloccata solo da ostacoli solidi.
+- Mappa 12×9, movimento in 4 direzioni, distanze di Manhattan.
+- Un'attivazione = muoversi (opzionale) e poi un solo attacco o abilità. Dopo aver agito non si può più muovere.
+- Gli ostacoli (tenda, rovina, bracieri, carro, casse, staccionata) bloccano movimento e linea di tiro. Le unità bloccano il movimento ma non la linea di tiro.
 - Il Balestriere non tira se ha un nemico adiacente.
 - La guardia assorbe i danni prima degli HP e scade all'inizio della successiva fase della squadra.
-- I valori sono in `src/engine/units.ts` e `src/engine/cards.ts`.
+- Niente fortuna: nessun colpo critico e nessuna probabilità di mancare. L'unico elemento casuale è il mazzo di carte.
 
-## Architettura
+### Carte-ordine
 
-- `src/engine/`: motore puro e deterministico. `applyAction(state, action)` valida e restituisce `{ state, events }`.
-- `src/ai/`: facile (avido con scelta casuale a seed fra i 3 migliori), intermedio (valutazione su un livello), difficile (migliori 6 candidati, simulazione della risposta avversaria, budget di 300 ms).
-- `src/game/`: Redux Toolkit (stato serializzabile), thunk, driver della fase AI.
-- `src/render/`: PixiJS v8. La scena riproduce gli eventi del motore con una coda di animazione, che non modifica mai lo stato.
-- `src/ui/`: componenti React. Quando una carta viene giocata (da te o dal nemico) compaiono tre effetti solo visivi: la carta "fantasma" con scintille al centro dello schermo, uno scoppio colorato sull'unità bersaglio e un riflesso sulla carta pescata. Rispettano `prefers-reduced-motion` (dissolvenza semplice, niente particelle).
+Mazzo di 12 carte (2 copie per tipo), mano di 3, una carta per fase; dopo l'uso ne peschi un'altra.
 
-## Asset provvisori
+| Carta | Effetto |
+|---|---|
+| Marcia forzata | Un alleato non ancora attivato ottiene +2 movimento per questa attivazione. |
+| Tenere la linea | Un alleato ottiene 3 punti guardia fino alla prossima fase della sua squadra. |
+| Fuoco concentrato | Il prossimo attacco alleato contro il nemico scelto infligge +2 danni, solo in questa fase. |
+| Carica | Un alleato da mischia non ancora attivato: +2 danni al prossimo colpo, se prima si muove di almeno 2 caselle. |
+| Richiamare le forze | Un alleato ferito recupera 2 HP. |
+| Ordine di precisione | Il prossimo tiro del Balestriere in questa fase: +1 danno e +1 gittata. |
 
-La grafica è **provvisoria**:
+I valori di unità e carte sono in `src/engine/units.ts` e `src/engine/cards.ts`.
 
-- soldati: sprite sheet di Final Fantasy Brave Exvius in `public/sprites/<squadra>/<classe>/` (idle animato, frame d'attacco e corsa `move.png`). Ramza e Fran hanno un vero ciclo di corsa a 4 frame; gli altri personaggi hanno una sola posa di corsa, accompagnata dal saltello. Se una sheet `move` manca o non si carica si usa l'idle (senza perdere idle e attacco). Giocatore: Tidus (guardiano), Ramza (esploratore), Fran (balestriere). Nemico: Garland (guardiano), Agrias (esploratore), Lulu (balestriere, che lancia Fuoco con la sua animazione di incantesimo e una palla di fuoco disegnata da codice). Le sheet sono descritte in `src/render/spriteManifest.ts` e caricate da `src/render/assetMap.ts`. Gli sprite procedurali 12×16 di `src/render/spriteFactory.ts` restano come ripiego automatico se una sheet non si carica;
-- terreno: la mappa è 12×9. Immagine dipinta vista dall'alto in `public/map/ground.png` (generata con Gemini), proiettata sul rombo isometrico da `src/render/groundGeometry.ts` e `loadGround` in `src/render/assetMap.ts`. L'immagine è 4:3, come la mappa. La pozza di luce di destra cade sul braciere (8,5); quella di sinistra era dipinta sotto il carro, lontano dal braciere (3,3), e viene spenta da codice al caricamento (`src/render/groundGlow.ts`): se rigeneri il terreno, aggiorna o svuota `MISPLACED_GLOWS`. Se l'immagine manca, `src/render/terrain.ts` disegna il terreno da codice;
-- oggetti (tenda, rovina, bracieri, carro, casse, staccionata): foglio dipinto su sfondo magenta in `public/map/props.png` (generato con Gemini). `src/render/propKey.ts` toglie il magenta, `src/render/propManifest.ts` indica riquadro, punto a terra e scala di ogni oggetto. I blocchi di gioco (quali caselle bloccano movimento e tiro) sono nei dati di `src/engine/arena.ts`, disposti in modo simmetrico per punto. Se il foglio manca, `src/render/terrain.ts` li disegna da codice;
-- luci, braci e vignettatura: `src/render/effects.ts`.
+## Com'è fatto
 
-Per cambiare gli sprite basta modificare il manifest (e le immagini in `public/sprites/`). Le regole non cambiano.
+Strumenti: React 19, TypeScript strict, Vite, Redux Toolkit, PixiJS 8, Vitest.
 
-Il riferimento stilistico è `docs/references/battlefield-reference.png`.
+- `src/engine/`: il motore delle regole. È puro e deterministico: `applyAction(stato, azione)` valida l'azione e restituisce il nuovo stato più gli eventi da animare. Non sa niente di grafica.
+- `src/ai/`: le tre AI. Usano lo stesso motore del giocatore, quindi non possono fare mosse illegali. Facile: sceglie a caso (con seed) fra i 3 colpi migliori. Intermedio: valuta danni, minacce e posizione. Difficile: considera anche la risposta del giocatore, con un limite di tempo.
+- `src/game/`: lo stato con Redux Toolkit, le azioni asincrone e il ciclo della fase dell'AI.
+- `src/render/`: la scena PixiJS, la proiezione isometrica e le animazioni. Riproduce gli eventi del motore e non modifica mai lo stato di gioco.
+- `src/ui/`: menu, HUD, pannello unità, mano di carte, schermata finale e gli effetti delle carte.
+- `public/sprites/`, `public/map/`: immagini dei personaggi, del terreno e degli oggetti.
+- `docs/`: specifica di progetto e piano di implementazione (`docs/superpowers/`) e immagine di riferimento dello stile.
+
+Le immagini sono sostituibili senza toccare le regole: gli sprite sono descritti in `src/render/spriteManifest.ts`, gli oggetti in `src/render/propManifest.ts`. Se un'immagine manca o non si carica, la scena ripiega su una versione disegnata da codice.
+
+## Crediti e copyright
+
+- **Sprite dei personaggi** (Tidus, Ramza, Fran, Garland, Agrias, Lulu): © SQUARE ENIX CO., LTD. Tutti i diritti riservati. Provengono da *Final Fantasy Brave Exvius*. Progetto didattico senza scopo di lucro. Gli sprite sono inclusi nel repository solo per questo scopo: non sono ridistribuibili da questo progetto.
+- **Terreno e oggetti** (`public/map/`): immagini generate con Gemini a partire da prompt scritti per questo progetto.
+- **Font** Pixelify Sans: Google Fonts.
+- Costruito insieme a Claude Code.
 
 ## Limiti noti
 
-- Nessun audio.
-- La camminata usa la sheet `move` (ciclo o posa singola) più un saltello; gli spostamenti restano interpolati.
-- L'AI difficile usa una ricerca limitata, non un minimax completo. Se scatta il tetto di tempo, la scelta può dipendere dalla velocità della macchina.
-- L'ordinamento in profondità della tenda (2×2) è approssimato.
-- Le carte Carica e Marcia forzata non si combinano mai, per via del limite di una carta per fase.
-
-## Copyright
-
-Sprite dei personaggi © SQUARE ENIX CO., LTD. Tutti i diritti riservati. Progetto didattico senza scopo di lucro.
+- Nessun suono.
+- Solo Ramza e Fran hanno un vero ciclo di corsa a 4 frame; gli altri quattro personaggi hanno una posa di corsa unica con un saltello.
+- La mappa non si usa da tastiera: serve il mouse (o il tocco).
+- Una pozza di luce del terreno dipinto è fuori posto e viene spenta da codice (`src/render/groundGlow.ts`). Se rigeneri il terreno, aggiorna o svuota `MISPLACED_GLOWS`.
+- "Ricomincia" e "Menu" non chiedono conferma.
+- Con "riduci animazioni" i numeri dei danni e il banner del turno durano troppo poco per essere letti (gli HP e l'indicatore del turno restano visibili).
+- L'AI contro l'AI può andare in stallo in qualche partita (circa 1 su 16 a livelli alti): non succede quando muovi tu.
+- A ogni riavvio la scena ricarica terreno e oggetti: con molti riavvii di fila usa un po' di memoria in più.
+- Il browser deve supportare WebGL: altrimenti il campo resta vuoto.
