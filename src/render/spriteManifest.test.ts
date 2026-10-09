@@ -35,10 +35,22 @@ describe('SPRITE_MANIFEST', () => {
     for (const team of ['player', 'ai'] as const) {
       expect(Object.keys(SPRITE_MANIFEST[team]).sort()).toEqual([...archetypes].sort());
       for (const spec of Object.values(SPRITE_MANIFEST[team])) {
-        for (const sheet of [spec.idle, spec.attack]) {
+        for (const sheet of [spec.idle, spec.attack, ...(spec.move ? [spec.move] : [])]) {
           expect(sheet.frames).toBeGreaterThan(0);
           expect(sheet.frames).toBeLessThanOrEqual(sheet.cols * sheet.rows);
         }
+      }
+    }
+  });
+
+  it('ogni classe ha una sheet di corsa coerente', () => {
+    for (const team of ['player', 'ai'] as const) {
+      for (const a of archetypes) {
+        const move = SPRITE_MANIFEST[team][a].move;
+        expect(move).toBeDefined();
+        expect(move!.url).toBe(`/sprites/${team}/${a}/move.png`);
+        expect(move!.frames).toBeGreaterThanOrEqual(1);
+        expect(move!.frames).toBeLessThanOrEqual(move!.cols * move!.rows);
       }
     }
   });

@@ -9,6 +9,7 @@ import type { BattleScene, UnitView } from './scene';
 import { lerp, tween } from './tween';
 
 const HEAD = 70;
+const RUN_SPEED = 0.22;
 
 /** Traduce gli eventi del motore in animazioni, in sequenza. Non modifica mai lo stato di gioco. */
 export class Animator {
@@ -68,17 +69,37 @@ export class Animator {
   private async walk(id: string, path: Pos[]): Promise<void> {
     const view = this.scene.view(id);
     if (!view || path.length < 2) return;
-    for (let i = 1; i < path.length; i++) {
-      const a = path[i - 1];
-      const b = path[i];
-      this.scene.face(view, toScreen(b).x - toScreen(a).x);
-      await tween(this.ticker, 150, (k) => {
-        this.scene.placeAt(view, { x: lerp(a.x, b.x, k), y: lerp(a.y, b.y, k) });
-        view.body.y = -Math.sin(Math.PI * k) * 5;
-      });
+    const body = view.body;
+    const run = view.art.move.length > 0;
+    try {
+      if (run) {
+        body.textures = view.art.move;
+        body.loop = true;
+        body.animationSpeed = RUN_SPEED;
+        body.play();
+      }
+      for (let i = 1; i < path.length; i++) {
+        const a = path[i - 1];
+        const b = path[i];
+        this.scene.face(view, toScreen(b).x - toScreen(a).x);
+        await tween(this.ticker, 150, (k) => {
+          if (body.destroyed) return;
+          this.scene.placeAt(view, { x: lerp(a.x, b.x, k), y: lerp(a.y, b.y, k) });
+          body.y = -Math.sin(Math.PI * k) * 5;
+        });
+      }
+      view.unit.pos = { ...path[path.length - 1] };
+    } finally {
+      if (!body.destroyed) {
+        body.y = 0;
+        if (run) {
+          body.textures = view.art.idle;
+          body.loop = true;
+          body.animationSpeed = IDLE_SPEED;
+          body.play();
+        }
+      }
     }
-    view.body.y = 0;
-    view.unit.pos = { ...path[path.length - 1] };
   }
 
   private async lunge(attackerId: string, targetId: string): Promise<void> {

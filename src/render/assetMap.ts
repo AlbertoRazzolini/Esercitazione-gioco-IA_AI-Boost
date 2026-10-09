@@ -16,6 +16,8 @@ import type { SheetSpec } from './spriteManifest';
 export interface UnitArt {
   idle: Texture[];
   attack: Texture[];
+  /** corsa/camminata; vuoto se la sheet manca (si usa l'idle) */
+  move: Texture[];
   scale: number;
   /** true se l'immagine originale guarda a sinistra */
   facesLeft: boolean;
@@ -48,11 +50,17 @@ async function loadSheet(spec: SheetSpec): Promise<Texture[]> {
 async function loadArchetype(team: Team, archetype: Archetype): Promise<UnitArt | null> {
   try {
     const m = SPRITE_MANIFEST[team][archetype];
-    const [idle, attack] = await Promise.all([loadSheet(m.idle), loadSheet(m.attack)]);
+    const [idle, attack, move] = await Promise.all([
+      loadSheet(m.idle),
+      loadSheet(m.attack),
+      // una sheet di corsa che non si carica non deve far scartare idle e attacco
+      m.move ? loadSheet(m.move).catch(() => [] as Texture[]) : Promise.resolve([] as Texture[]),
+    ]);
     if (idle.length === 0) return null;
     return {
       idle,
       attack,
+      move,
       scale: m.scale,
       facesLeft: true,
       projectile: m.projectile ?? 'bolt',
@@ -184,6 +192,7 @@ export function unitArt(team: Team, archetype: Archetype, loaded: LoadedArt): Un
     loaded[team][archetype] ?? {
       idle: [proceduralUnitTexture(team, archetype)],
       attack: [],
+      move: [],
       scale: SPRITE_SCALE,
       facesLeft: false,
       projectile: 'bolt',

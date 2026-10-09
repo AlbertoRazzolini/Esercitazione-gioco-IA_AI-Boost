@@ -86,8 +86,9 @@ export class BattleScene {
     const w = 30;
     const g = view.bar;
     const { art } = view;
+    const idle = art.idle[0]; // sempre l'idle: la barra non salta mentre si mostra la pose di corsa
     // altezza testa: dai piedi (ancora) al bordo alto, meno il margine vuoto dei frame delle sheet
-    const top = -Math.round(view.body.texture.height * view.body.anchor.y * art.scale - (art.attack.length > 0 ? 5 * art.scale : 0) + 8);
+    const top = -Math.round(idle.height * (idle.defaultAnchor?.y ?? 1) * art.scale - (art.attack.length > 0 ? 5 * art.scale : 0) + 8);
     g.clear();
     g.rect(-w / 2 - 1, top, w + 2, 6).fill(0x140e14);
     g.rect(-w / 2, top + 1, Math.max(0, (w * view.unit.hp) / max), 4).fill(view.unit.team === 'player' ? 0x6fb35a : 0xd0533f);

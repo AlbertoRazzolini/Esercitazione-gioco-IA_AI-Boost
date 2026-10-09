@@ -45,8 +45,8 @@ npm run build    # build di produzione in dist/
 
 La grafica è **provvisoria**:
 
-- soldati: sprite sheet di Final Fantasy Brave Exvius in `public/sprites/<squadra>/<classe>/` (idle animato e frame d'attacco). Giocatore: Tidus (guardiano), Ramza (esploratore), Fran (balestriere). Nemico: Garland (guardiano), Agrias (esploratore), Lulu (balestriere, che lancia Fuoco con la sua animazione di incantesimo e una palla di fuoco disegnata da codice). Le sheet sono descritte in `src/render/spriteManifest.ts` e caricate da `src/render/assetMap.ts`. Gli sprite procedurali 12×16 di `src/render/spriteFactory.ts` restano come ripiego automatico se una sheet non si carica;
-- terreno: immagine dipinta vista dall'alto in `public/map/ground.png` (generata con Gemini), proiettata sul rombo isometrico da `src/render/groundGeometry.ts` e `loadGround` in `src/render/assetMap.ts`. Le due pozze di luce dell'immagine coincidono con i due bracieri (celle 2,3 e 7,4). Se l'immagine manca, `src/render/terrain.ts` disegna il terreno da codice;
+- soldati: sprite sheet di Final Fantasy Brave Exvius in `public/sprites/<squadra>/<classe>/` (idle animato, frame d'attacco e corsa `move.png`). Ramza e Fran hanno un vero ciclo di corsa a 4 frame; gli altri personaggi hanno una sola posa di corsa, accompagnata dal saltello. Se una sheet `move` manca o non si carica si usa l'idle (senza perdere idle e attacco). Giocatore: Tidus (guardiano), Ramza (esploratore), Fran (balestriere). Nemico: Garland (guardiano), Agrias (esploratore), Lulu (balestriere, che lancia Fuoco con la sua animazione di incantesimo e una palla di fuoco disegnata da codice). Le sheet sono descritte in `src/render/spriteManifest.ts` e caricate da `src/render/assetMap.ts`. Gli sprite procedurali 12×16 di `src/render/spriteFactory.ts` restano come ripiego automatico se una sheet non si carica;
+- terreno: la mappa è 12×9. `public/map/ground.png` è stato generato per una mappa 10×8 e per ora viene stirato di circa il 7% sulla 12×9, finché non se ne genera uno 4:3. Immagine dipinta vista dall'alto in `public/map/ground.png` (generata con Gemini), proiettata sul rombo isometrico da `src/render/groundGeometry.ts` e `loadGround` in `src/render/assetMap.ts`. Le due pozze di luce dell'immagine coincidono con i due bracieri (celle 3,3 e 8,5). Se l'immagine manca, `src/render/terrain.ts` disegna il terreno da codice;
 - oggetti (tenda, rovina, bracieri, carro, casse, staccionata): foglio dipinto su sfondo magenta in `public/map/props.png` (generato con Gemini). `src/render/propKey.ts` toglie il magenta, `src/render/propManifest.ts` indica riquadro, punto a terra e scala di ogni oggetto. I blocchi di gioco (quali caselle bloccano movimento e tiro) sono nei dati di `src/engine/arena.ts`, disposti in modo simmetrico per punto. Se il foglio manca, `src/render/terrain.ts` li disegna da codice;
 - luci, braci e vignettatura: `src/render/effects.ts`.
 
@@ -57,7 +57,7 @@ Il riferimento stilistico è `docs/references/battlefield-reference.png`.
 ## Limiti noti
 
 - Nessun audio.
-- Niente animazioni a fotogrammi degli sprite: idle e camminata sono interpolazioni.
+- La camminata usa la sheet `move` (ciclo o posa singola) più un saltello; gli spostamenti restano interpolati.
 - L'AI difficile usa una ricerca limitata, non un minimax completo. Se scatta il tetto di tempo, la scelta può dipendere dalla velocità della macchina.
 - L'ordinamento in profondità della tenda (2×2) è approssimato.
 - Le carte Carica e Marcia forzata non si combinano mai, per via del limite di una carta per fase.
