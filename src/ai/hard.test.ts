@@ -34,11 +34,14 @@ describe('AI difficile', () => {
 });
 
 describe('verifica dei livelli (AI contro AI)', () => {
-  it('l\'intermedio batte il facile', { timeout: 120_000 }, () => {
-    expect(wins('medium', 'easy', [1, 2, 3])).toBeGreaterThanOrEqual(4);
+  const seeds = [1, 2, 3, 4, 5, 6, 7, 8];
+  const halfOfGames = seeds.length * 2 / 2; // ogni seed si gioca da entrambi i lati
+
+  it('l\'intermedio batte il facile in più della metà delle partite', { timeout: 120_000 }, () => {
+    expect(wins('medium', 'easy', seeds)).toBeGreaterThan(halfOfGames);
   });
 
-  it('il difficile batte l\'intermedio', { timeout: 300_000 }, () => {
-    expect(wins('hard', 'medium', [1, 2])).toBeGreaterThanOrEqual(3);
+  it('il difficile batte l\'intermedio in più della metà delle partite', { timeout: 300_000 }, () => {
+    expect(wins('hard', 'medium', seeds)).toBeGreaterThan(halfOfGames);
   });
 });

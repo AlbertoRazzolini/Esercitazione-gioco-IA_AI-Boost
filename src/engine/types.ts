@@ -4,7 +4,7 @@ export type Difficulty = 'easy' | 'medium' | 'hard';
 export type Stage = 'idle' | 'moved' | 'acted' | 'done';
 export type CardId = 'forcedMarch' | 'holdTheLine' | 'focusFire' | 'charge' | 'rally' | 'precision';
 export type TerrainKind = 'grass' | 'dirt' | 'mud' | 'gravel';
-export type PropKind = 'tent' | 'ruin' | 'brazier' | 'rock' | 'tallgrass';
+export type PropKind = 'tent' | 'ruin' | 'brazier' | 'cart' | 'crates' | 'fence' | 'rock' | 'tallgrass';
 
 export interface Pos {
   x: number;
