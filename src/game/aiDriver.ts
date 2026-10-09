@@ -1,8 +1,9 @@
 import { planActivation } from '../ai';
 import { applyAction } from '../engine/engine';
 import type { AppThunk } from '../app/store';
+import { cardPlayedEvents } from './cardFx';
 import { playEvents } from './animator';
-import { busySet, gameUpdated, unitSelected } from './gameSlice';
+import { busySet, cardFxTriggered, gameUpdated, unitSelected } from './gameSlice';
 
 export const aiTiming = { thinkDelayMs: 250 };
 
@@ -27,6 +28,7 @@ export const runAiPhase = (): AppThunk<Promise<void>> => async (dispatch, getSta
           result = applyAction(current, { type: 'EndPhase' });
           if (!result.ok) return;
         }
+        for (const play of cardPlayedEvents(result.events)) dispatch(cardFxTriggered({ cardId: play.cardId, team: play.team }));
         const animation = playEvents(result.events);
         dispatch(gameUpdated(result.state));
         await animation;

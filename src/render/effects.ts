@@ -154,6 +154,44 @@ export class Effects {
     }).then(() => label.destroy());
   }
 
+  /** Scintille colorate e anello luminoso in (x, y). Si risolve sempre e non lascia oggetti. */
+  async sparkleBurst(x: number, y: number, color: number): Promise<void> {
+    const reducedMotion = motion.scale < 0.5;
+    const ring = new Graphics();
+    ring.position.set(x, y);
+    ring.blendMode = 'add';
+    this.scene.fx.addChild(ring);
+    const parts: { g: Graphics; vx: number; vy: number }[] = [];
+    if (!reducedMotion) {
+      for (let i = 0; i < 14; i++) {
+        const size = 2 + Math.round(Math.random());
+        const g = new Graphics().rect(-size / 2, -size / 2, size, size).fill(color);
+        g.blendMode = 'add';
+        g.position.set(x, y);
+        this.scene.fx.addChild(g);
+        const angle = Math.random() * Math.PI * 2;
+        const speed = 18 + Math.random() * 30;
+        parts.push({ g, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed - 14 });
+      }
+    }
+    try {
+      await tween(this.ticker, reducedMotion ? 600 : 700, (k) => {
+        if (ring.destroyed) return;
+        ring.clear();
+        ring.circle(0, 0, 6 + 24 * k).fill({ color, alpha: 0.35 * (1 - k) });
+        ring.circle(0, 0, 6 + 24 * k).stroke({ width: 2, color, alpha: 0.9 * (1 - k) });
+        for (const p of parts) {
+          if (p.g.destroyed) continue;
+          p.g.position.set(x + p.vx * k, y + p.vy * k + 40 * k * k);
+          p.g.alpha = 1 - k;
+        }
+      });
+    } finally {
+      ring.destroy();
+      for (const p of parts) if (!p.g.destroyed) p.g.destroy();
+    }
+  }
+
   destroy(): void {
     this.ticker.remove(this.update);
   }

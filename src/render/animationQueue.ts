@@ -6,6 +6,7 @@ import type { Effects } from './effects';
 import { WORLD_W, toScreen } from './iso';
 import { IDLE_SPEED } from './scene';
 import type { BattleScene, UnitView } from './scene';
+import { CARD_FX } from '../ui/cardFx';
 import { lerp, tween } from './tween';
 
 const HEAD = 70;
@@ -232,6 +233,8 @@ export class Animator {
   private async card(cardId: CardId, targetId: string): Promise<void> {
     const view = this.scene.view(targetId);
     if (!view) return;
+    const color = CARD_FX[cardId].color;
+    void this.effects.sparkleBurst(view.root.x, view.root.y - 28, color);
     await this.effects.floatText(view.root.x, view.root.y - HEAD - 12, CARD_DEFS[cardId].name, 0xf3c45a);
   }
 

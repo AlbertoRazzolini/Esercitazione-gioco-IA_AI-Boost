@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { useAppDispatch, useAppSelector } from '../app/hooks';
 import { unitSelected } from '../game/gameSlice';
 import { BattlefieldCanvas } from '../render/BattlefieldCanvas';
+import { CardFxLayer } from './CardFxLayer';
 import { CardHand } from './CardHand';
 import { EndScreen } from './EndScreen';
 import { Hud } from './Hud';
@@ -31,6 +32,7 @@ export function BattleScreen() {
         <UnitPanel />
         <CardHand />
       </footer>
+      <CardFxLayer />
       {winner && !busy && <EndScreen winner={winner} />}
     </div>
   );

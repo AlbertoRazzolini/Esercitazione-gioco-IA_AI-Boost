@@ -1,6 +1,6 @@
 import { createSlice } from '@reduxjs/toolkit';
 import type { PayloadAction } from '@reduxjs/toolkit';
-import type { Difficulty, GameState } from '../engine/types';
+import type { CardId, Difficulty, GameState, Team } from '../engine/types';
 import { loadUnlocked } from './progress';
 
 export type Screen = 'start' | 'battle';
@@ -19,6 +19,10 @@ export interface GameUiState {
   busy: boolean;
   /** livelli sbloccati dalla progressione */
   unlocked: Difficulty[];
+  /** ultima carta giocata (per gli effetti visivi); l'id cresce a ogni giocata */
+  cardFx: { id: number; cardId: CardId; team: Team } | null;
+  /** contatore degli id di cardFx, non si azzera fra le partite */
+  cardFxSeq: number;
 }
 
 const initialState: GameUiState = {
@@ -32,6 +36,8 @@ const initialState: GameUiState = {
   pendingCard: null,
   message: null,
   busy: false,
+  cardFx: null,
+  cardFxSeq: 0,
 };
 
 function resetInteraction(state: GameUiState): void {
@@ -40,6 +46,7 @@ function resetInteraction(state: GameUiState): void {
   state.pendingCard = null;
   state.message = null;
   state.busy = false;
+  state.cardFx = null;
 }
 
 const gameSlice = createSlice({
@@ -57,6 +64,10 @@ const gameSlice = createSlice({
       state.game = action.payload;
       state.gameId += 1;
       resetInteraction(state);
+    },
+    cardFxTriggered(state, action: PayloadAction<{ cardId: CardId; team: Team }>) {
+      state.cardFxSeq += 1;
+      state.cardFx = { id: state.cardFxSeq, ...action.payload };
     },
     gameUpdated(state, action: PayloadAction<GameState>) {
       state.game = action.payload;
@@ -94,6 +105,7 @@ export const {
   levelUnlocked,
   gameStarted,
   gameUpdated,
+  cardFxTriggered,
   unitSelected,
   modeSet,
   cardSelected,

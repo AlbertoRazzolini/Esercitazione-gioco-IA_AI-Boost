@@ -6,9 +6,11 @@ import { UNIT_DEFS } from '../engine/units';
 import type { Action, Pos } from '../engine/types';
 import type { AppThunk } from '../app/store';
 import { runAiPhase } from './aiDriver';
+import { cardPlayedEvents } from './cardFx';
 import { playEvents } from './animator';
 import {
   busySet,
+  cardFxTriggered,
   cardSelected,
   difficultySet,
   gameStarted,
@@ -40,6 +42,7 @@ export const perform =
     const gameId = ui.gameId;
     dispatch(busySet(true));
     // l'animazione parte prima dell'aggiornamento, così il renderer non salta alla posizione finale
+    for (const play of cardPlayedEvents(result.events)) dispatch(cardFxTriggered({ cardId: play.cardId, team: play.team }));
     const animation = playEvents(result.events);
     dispatch(gameUpdated(result.state));
     await animation;

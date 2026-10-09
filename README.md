@@ -39,7 +39,7 @@ npm run build    # build di produzione in dist/
 - `src/ai/`: facile (avido con scelta casuale a seed fra i 3 migliori), intermedio (valutazione su un livello), difficile (migliori 6 candidati, simulazione della risposta avversaria, budget di 300 ms).
 - `src/game/`: Redux Toolkit (stato serializzabile), thunk, driver della fase AI.
 - `src/render/`: PixiJS v8. La scena riproduce gli eventi del motore con una coda di animazione, che non modifica mai lo stato.
-- `src/ui/`: componenti React.
+- `src/ui/`: componenti React. Quando una carta viene giocata (da te o dal nemico) compaiono tre effetti solo visivi: la carta "fantasma" con scintille al centro dello schermo, uno scoppio colorato sull'unità bersaglio e un riflesso sulla carta pescata. Rispettano `prefers-reduced-motion` (dissolvenza semplice, niente particelle).
 
 ## Asset provvisori
 

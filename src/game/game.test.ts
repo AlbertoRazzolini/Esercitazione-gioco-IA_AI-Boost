@@ -3,7 +3,7 @@ import { makeStore } from '../app/store';
 import { createGame } from '../engine/engine';
 import { makeState, unit } from '../engine/testUtils';
 import { aiTiming } from './aiDriver';
-import { busySet, difficultySet, gameStarted } from './gameSlice';
+import { busySet, cardFxTriggered, difficultySet, gameStarted } from './gameSlice';
 import { computeOverlay } from './selectors';
 import { clickCell, perform, startGame } from './thunks';
 
@@ -102,5 +102,45 @@ describe('progressione', () => {
     expect(store.getState().game.unlocked).toEqual(['easy', 'medium']);
     store.dispatch(difficultySet('medium'));
     expect(store.getState().game.difficulty).toBe('medium');
+  });
+});
+
+describe('effetto carta', () => {
+  const wounded = () =>
+    makeState([unit('g', 'player', 'guardian', 3, 3, { hp: 1 }), unit('e', 'ai', 'scout', 8, 3)], {
+      decks: { player: { draw: ['charge'], hand: ['rally', 'precision'], discard: [] }, ai: { draw: [], hand: [], discard: [] } },
+    });
+
+  it('giocare una carta valida imposta cardFx con id crescente', async () => {
+    const store = makeStore();
+    store.dispatch(gameStarted(wounded()));
+    expect(store.getState().game.cardFx).toBeNull();
+    store.dispatch(cardFxTriggered({ cardId: 'precision', team: 'ai' }));
+    const before = store.getState().game.cardFx!.id;
+    const ok = await store.dispatch(perform({ type: 'PlayCard', handIndex: 0, targetId: 'g' }));
+    expect(ok).toBe(true);
+    const fx = store.getState().game.cardFx!;
+    expect(fx.cardId).toBe('rally');
+    expect(fx.team).toBe('player');
+    expect(fx.id).toBeGreaterThan(before);
+  });
+
+  it('carta illegale (seconda nella stessa fase): cardFx invariato', async () => {
+    const store = makeStore();
+    store.dispatch(gameStarted(wounded()));
+    await store.dispatch(perform({ type: 'PlayCard', handIndex: 0, targetId: 'g' }));
+    const fx = store.getState().game.cardFx;
+    const ok = await store.dispatch(perform({ type: 'PlayCard', handIndex: 0, targetId: 'g' }));
+    expect(ok).toBe(false);
+    expect(store.getState().game.cardFx).toBe(fx);
+  });
+
+  it('una nuova partita azzera cardFx', async () => {
+    const store = makeStore();
+    store.dispatch(gameStarted(wounded()));
+    await store.dispatch(perform({ type: 'PlayCard', handIndex: 0, targetId: 'g' }));
+    expect(store.getState().game.cardFx).not.toBeNull();
+    store.dispatch(startGame(42));
+    expect(store.getState().game.cardFx).toBeNull();
   });
 });
