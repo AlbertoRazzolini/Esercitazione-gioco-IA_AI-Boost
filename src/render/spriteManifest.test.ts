@@ -43,6 +43,23 @@ describe('SPRITE_MANIFEST', () => {
     }
   });
 
+  it('il balestriere nemico (Lulu) lancia fuoco con la sua animazione di incantesimo', () => {
+    const lulu = SPRITE_MANIFEST.ai.crossbow;
+    expect(lulu.projectile).toBe('fire');
+    expect(lulu.attack.url).toBe('/sprites/ai/crossbow/magic.png');
+    expect(lulu.attack.frames).toBe(4);
+    expect(SPRITE_MANIFEST.player.crossbow.projectile ?? 'bolt').toBe('bolt');
+  });
+
+  it('i tempi di lancio, se indicati, sono positivi', () => {
+    for (const team of ['player', 'ai'] as const) {
+      for (const spec of Object.values(SPRITE_MANIFEST[team])) {
+        if (spec.attackSpeed !== undefined) expect(spec.attackSpeed).toBeGreaterThan(0);
+        if (spec.launchMs !== undefined) expect(spec.launchMs).toBeGreaterThanOrEqual(0);
+      }
+    }
+  });
+
   it('il nemico usa personaggi diversi da quelli del giocatore', () => {
     for (const a of archetypes) {
       expect(SPRITE_MANIFEST.ai[a].idle.url).not.toBe(SPRITE_MANIFEST.player[a].idle.url);

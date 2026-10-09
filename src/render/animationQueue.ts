@@ -121,16 +121,49 @@ export class Animator {
     this.scene.face(view, target.root.x - view.root.x);
     const from = { x: view.root.x, y: view.root.y - 34 };
     const to = { x: target.root.x, y: target.root.y - 30 };
-    const anim = this.attackFrames(view, 0.4);
-    // la freccia parte a metà della tensione dell'arco
-    if (view.art.attack.length > 0) await tween(this.ticker, 380, () => undefined);
-    const bolt = new Graphics().rect(-7, -1, 14, 2).fill(0xe8dcc0).rect(5, -2, 3, 4).fill(0x9aa0b0);
-    bolt.rotation = Math.atan2(to.y - from.y, to.x - from.x);
-    bolt.position.set(from.x, from.y);
-    this.scene.fx.addChild(bolt);
-    await tween(this.ticker, 220, (k) => bolt.position.set(lerp(from.x, to.x, k), lerp(from.y, to.y, k)));
-    bolt.destroy();
+    const { art } = view;
+    const anim = this.attackFrames(view, art.attackSpeed ?? 0.4);
+    // il proiettile parte a metà dell'animazione (tensione dell'arco, lancio dell'incantesimo)
+    if (art.attack.length > 0) await tween(this.ticker, art.launchMs ?? 380, () => undefined);
+    const fire = art.projectile === 'fire';
+    const missile = fire ? this.fireball() : this.bolt();
+    missile.rotation = fire ? 0 : Math.atan2(to.y - from.y, to.x - from.x);
+    missile.position.set(from.x, from.y);
+    this.scene.fx.addChild(missile);
+    await tween(this.ticker, fire ? 300 : 220, (k) => {
+      missile.position.set(lerp(from.x, to.x, k), lerp(from.y, to.y, k));
+      if (fire) missile.scale.set(1 + Math.sin(k * 14) * 0.12);
+    });
+    missile.destroy();
+    if (fire) await this.burst(to);
     await anim;
+  }
+
+  private bolt(): Graphics {
+    return new Graphics().rect(-7, -1, 14, 2).fill(0xe8dcc0).rect(5, -2, 3, 4).fill(0x9aa0b0);
+  }
+
+  private fireball(): Graphics {
+    const g = new Graphics();
+    g.circle(0, 0, 13).fill({ color: 0xff7a1f, alpha: 0.3 });
+    g.circle(0, 0, 8).fill(0xf08a2a);
+    g.circle(0, 0, 4).fill(0xffd36b);
+    g.blendMode = 'add';
+    return g;
+  }
+
+  /** Piccolo scoppio di fuoco all'impatto. */
+  private async burst(at: { x: number; y: number }): Promise<void> {
+    const ring = new Graphics();
+    ring.position.set(at.x, at.y);
+    ring.blendMode = 'add';
+    this.scene.fx.addChild(ring);
+    await tween(this.ticker, 220, (k) => {
+      ring.clear();
+      ring.circle(0, 0, 6 + 20 * k).fill({ color: 0xff8a2a, alpha: 0.55 * (1 - k) });
+      ring.circle(0, 0, 3 + 10 * k).fill({ color: 0xffd36b, alpha: 0.8 * (1 - k) });
+    });
+    ring.destroy();
   }
 
   private async hit(id: string, amount: number, absorbed: number): Promise<void> {

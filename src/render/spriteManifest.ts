@@ -15,6 +15,12 @@ export interface ArchetypeSprites {
   attack: SheetSpec;
   /** altezza a schermo desiderata ≈ altezza del personaggio × scale */
   scale: number;
+  /** proiettile degli attacchi a distanza (default: quadrello) */
+  projectile?: 'bolt' | 'fire';
+  /** velocità dei frame d'attacco (frame per tick; default 0.3 mischia, 0.4 distanza) */
+  attackSpeed?: number;
+  /** ms dopo i quali parte il proiettile, a partire dall'inizio dell'animazione (default 380) */
+  launchMs?: number;
 }
 
 export interface Rect {
@@ -69,10 +75,14 @@ export const SPRITE_MANIFEST: Record<Team, Record<Archetype, ArchetypeSprites>> 
       idle: { url: '/sprites/ai/scout/idle.png', cols: 3, rows: 3, frames: 8, footX: 30, footY: 62 },
       attack: { url: '/sprites/ai/scout/atk.png', cols: 3, rows: 6, frames: 16, footX: 63, footY: 95 },
     },
+    // Lulu: lancia Fuoco con l'animazione di incantesimo (magic.png); il foglio atk.png lancia una bambola ed esce dal frame
     crossbow: {
       scale: 1.2,
+      projectile: 'fire',
+      attackSpeed: 0.12,
+      launchMs: 330,
       idle: { url: '/sprites/ai/crossbow/idle.png', cols: 3, rows: 2, frames: 4, footX: 31, footY: 66 },
-      attack: { url: '/sprites/ai/crossbow/atk.png', cols: 3, rows: 9, frames: 26, footX: 138, footY: 95 },
+      attack: { url: '/sprites/ai/crossbow/magic.png', cols: 3, rows: 2, frames: 4, footX: 31, footY: 84 },
     },
   },
 };

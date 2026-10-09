@@ -15,6 +15,11 @@ export interface UnitArt {
   scale: number;
   /** true se l'immagine originale guarda a sinistra */
   facesLeft: boolean;
+  projectile: 'bolt' | 'fire';
+  /** frame per tick dell'animazione d'attacco; se assente decide l'animatore */
+  attackSpeed?: number;
+  /** ms dopo i quali parte il proiettile; se assente decide l'animatore */
+  launchMs?: number;
 }
 
 export type LoadedArt = Record<Team, Record<Archetype, UnitArt | null>>;
@@ -41,7 +46,15 @@ async function loadArchetype(team: Team, archetype: Archetype): Promise<UnitArt 
     const m = SPRITE_MANIFEST[team][archetype];
     const [idle, attack] = await Promise.all([loadSheet(m.idle), loadSheet(m.attack)]);
     if (idle.length === 0) return null;
-    return { idle, attack, scale: m.scale, facesLeft: true };
+    return {
+      idle,
+      attack,
+      scale: m.scale,
+      facesLeft: true,
+      projectile: m.projectile ?? 'bolt',
+      attackSpeed: m.attackSpeed,
+      launchMs: m.launchMs,
+    };
   } catch (error) {
     console.warn('Sprite non caricati, uso quelli procedurali:', team, archetype, error);
     return null;
@@ -65,6 +78,7 @@ export function unitArt(team: Team, archetype: Archetype, loaded: LoadedArt): Un
       attack: [],
       scale: SPRITE_SCALE,
       facesLeft: false,
+      projectile: 'bolt',
     }
   );
 }
