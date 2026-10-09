@@ -1,5 +1,6 @@
 import { Assets, Rectangle, Texture } from 'pixi.js';
 import type { Arena, Archetype, PropKind, Team } from '../engine/types';
+import { MISPLACED_GLOWS, neutralizeGlow } from './groundGlow';
 import { groundBounds, groundTransform } from './groundGeometry';
 import { keyPixel } from './propKey';
 import { PROPS_URL, PROP_SPRITES } from './propManifest';
@@ -115,10 +116,21 @@ export async function loadGround(arena: Arena): Promise<Texture | null> {
       originY: bounds.y,
       scale: GROUND_SCALE,
     });
+    // sorgente intermedia: qui si spengono le pozze di luce dipinte fuori posto
+    const source = document.createElement('canvas');
+    source.width = img.naturalWidth;
+    source.height = img.naturalHeight;
+    const sourceCtx = source.getContext('2d', { willReadFrequently: true });
+    if (!sourceCtx) return null;
+    sourceCtx.drawImage(img, 0, 0);
+    const pixels = sourceCtx.getImageData(0, 0, source.width, source.height);
+    for (const spot of MISPLACED_GLOWS) neutralizeGlow(pixels.data, source.width, source.height, spot);
+    sourceCtx.putImageData(pixels, 0, 0);
+
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = 'high';
     ctx.setTransform(m.a, m.b, m.c, m.d, m.e, m.f);
-    ctx.drawImage(img, 0, 0);
+    ctx.drawImage(source, 0, 0);
     return Texture.from(canvas);
   } catch (error) {
     console.warn('Terreno dipinto non caricato, uso quello procedurale:', error);
