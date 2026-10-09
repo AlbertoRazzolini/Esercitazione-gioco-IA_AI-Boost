@@ -8,7 +8,7 @@ import { registerAnimator } from '../game/animator';
 import { computeOverlay } from '../game/selectors';
 import { clickCell } from '../game/thunks';
 import { Animator } from './animationQueue';
-import { loadUnitArt } from './assetMap';
+import { loadGround, loadUnitArt } from './assetMap';
 import { Effects } from './effects';
 import { WORLD_H, WORLD_W, toCell } from './iso';
 import { BattleScene } from './scene';
@@ -34,7 +34,8 @@ export function BattlefieldCanvas() {
         roundPixels: true,
       })
       .then(async () => {
-        const art = await loadUnitArt();
+        const arena = store.getState().game.game?.arena;
+        const [art, ground] = await Promise.all([loadUnitArt(), arena ? loadGround(arena) : null]);
         const game = store.getState().game.game;
         // StrictMode in sviluppo smonta il componente mentre init/caricamento sono ancora in corso
         if (disposed || !game) {
@@ -44,7 +45,7 @@ export function BattlefieldCanvas() {
         initialized = true;
         host.appendChild(app.canvas);
 
-        const scene = new BattleScene(game.arena, art);
+        const scene = new BattleScene(game.arena, art, ground);
         app.stage.addChild(scene.root);
         const effects = new Effects(scene, game.arena, app.ticker);
         const animator = new Animator(scene, app.ticker, effects, () => store.getState().game.game);

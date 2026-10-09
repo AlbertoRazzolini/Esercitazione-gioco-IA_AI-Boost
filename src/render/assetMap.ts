@@ -1,5 +1,6 @@
 import { Assets, Rectangle, Texture } from 'pixi.js';
-import type { Archetype, Team } from '../engine/types';
+import type { Arena, Archetype, Team } from '../engine/types';
+import { groundBounds, groundTransform } from './groundGeometry';
 import { SPRITE_SCALE, proceduralUnitTexture } from './spriteFactory';
 import { SPRITE_MANIFEST, frameRects } from './spriteManifest';
 import type { SheetSpec } from './spriteManifest';
@@ -69,6 +70,49 @@ export async function loadUnitArt(): Promise<LoadedArt> {
     }),
   );
   return Object.fromEntries(entries) as LoadedArt;
+}
+
+/** Risoluzione del terreno proiettato rispetto alle coordinate del mondo (2 = nitido anche su schermi densi). */
+export const GROUND_SCALE = 2;
+export const GROUND_URL = '/map/ground.png';
+
+function loadImage(url: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = () => reject(new Error(`Immagine non caricata: ${url}`));
+    img.src = url;
+  });
+}
+
+/**
+ * Terreno dipinto: l'immagine vista dall'alto viene proiettata una sola volta sul rombo isometrico
+ * (con filtraggio di qualità) e restituita come texture. Se il caricamento fallisce restituisce null
+ * e la scena usa il terreno disegnato da codice.
+ */
+export async function loadGround(arena: Arena): Promise<Texture | null> {
+  try {
+    const img = await loadImage(import.meta.env.BASE_URL + GROUND_URL.replace(/^\//, ''));
+    const bounds = groundBounds(arena.width, arena.height);
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.round(bounds.w * GROUND_SCALE);
+    canvas.height = Math.round(bounds.h * GROUND_SCALE);
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return null;
+    const m = groundTransform(img.naturalWidth, img.naturalHeight, arena.width, arena.height, {
+      originX: bounds.x,
+      originY: bounds.y,
+      scale: GROUND_SCALE,
+    });
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.setTransform(m.a, m.b, m.c, m.d, m.e, m.f);
+    ctx.drawImage(img, 0, 0);
+    return Texture.from(canvas);
+  } catch (error) {
+    console.warn('Terreno dipinto non caricato, uso quello procedurale:', error);
+    return null;
+  }
 }
 
 export function unitArt(team: Team, archetype: Archetype, loaded: LoadedArt): UnitArt {

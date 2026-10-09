@@ -1,5 +1,8 @@
-import { Container, Graphics } from 'pixi.js';
+import { Container, Graphics, Sprite } from 'pixi.js';
+import type { Texture } from 'pixi.js';
 import type { Arena, Prop, TerrainKind } from '../engine/types';
+import { GROUND_SCALE } from './assetMap';
+import { groundBounds } from './groundGeometry';
 import { TILE_H, TILE_W, depthOf, toScreen } from './iso';
 
 const HW = TILE_W / 2;
@@ -19,7 +22,11 @@ function hash(x: number, y: number, i: number): number {
   return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
 }
 
-export function drawTerrain(arena: Arena): Container {
+/**
+ * Terreno della mappa. Con `ground` (immagine dipinta già proiettata, vedi `loadGround`) mostra quella;
+ * altrimenti disegna le tessere da codice. I fianchi del blocco sono sempre disegnati da codice.
+ */
+export function drawTerrain(arena: Arena, ground: Texture | null = null): Container {
   const layer = new Container();
   const g = new Graphics();
   layer.addChild(g);
@@ -29,6 +36,14 @@ export function drawTerrain(arena: Arena): Container {
   const depth = 14;
   g.poly([left.x, left.y, bottom.x, bottom.y, bottom.x, bottom.y + depth, left.x, left.y + depth]).fill(0x221a22);
   g.poly([bottom.x, bottom.y, right.x, right.y, right.x, right.y + depth, bottom.x, bottom.y + depth]).fill(0x1a141c);
+  if (ground) {
+    const bounds = groundBounds(arena.width, arena.height);
+    const sprite = new Sprite(ground);
+    sprite.position.set(bounds.x, bounds.y);
+    sprite.scale.set(1 / GROUND_SCALE);
+    layer.addChild(sprite);
+    return layer;
+  }
   for (let y = 0; y < arena.height; y++) {
     for (let x = 0; x < arena.width; x++) {
       const c = toScreen({ x, y });

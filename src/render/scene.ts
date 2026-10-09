@@ -1,4 +1,5 @@
 import { AnimatedSprite, Container, Graphics } from 'pixi.js';
+import type { Texture } from 'pixi.js';
 import { posKey } from '../engine/arena';
 import { UNIT_DEFS } from '../engine/units';
 import type { Arena, GameState, Pos, Unit } from '../engine/types';
@@ -42,11 +43,11 @@ export class BattleScene {
 
   private readonly art: LoadedArt;
 
-  constructor(arena: Arena, art: LoadedArt) {
+  constructor(arena: Arena, art: LoadedArt, ground: Texture | null = null) {
     this.art = art;
     this.actors.sortableChildren = true;
     this.root.addChild(this.world);
-    this.world.addChild(drawTerrain(arena), this.overlayLayer, this.hoverLayer, this.actors, this.fx);
+    this.world.addChild(drawTerrain(arena, ground), this.overlayLayer, this.hoverLayer, this.actors, this.fx);
     for (const prop of arena.props) this.actors.addChild(drawProp(prop));
   }
 
