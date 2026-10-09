@@ -151,6 +151,7 @@ Interfaccia: `planActivation(state, difficulty, seed): Action[]`, che restituisc
 ## 7. UI
 
 - **Schermata iniziale:** titolo, scelta della difficoltà, "Inizia".
+- **Progressione:** all'inizio è sbloccato solo il livello facile (Recluta). Vincere a un livello sblocca il successivo: Veterano, poi Comandante. I livelli bloccati mostrano un lucchetto e non si possono scegliere. La progressione è salvata in `localStorage`; se non è disponibile si riparte da Recluta. Dopo una vittoria, la schermata finale offre "Affronta il livello successivo".
 - **HUD:** round, squadra attiva, stato di attivazione delle unità.
 - **Pannello unità:** HP, guardia, cooldown, pulsanti Attacco / Abilità / Fine attivazione, descrizione dell'abilità.
 - **Mano di carte:** in basso, compatta; le carte non giocabili sono disattivate e mostrano il motivo.
@@ -190,7 +191,9 @@ Lo scaffold Vite di default (`App.tsx`, `App.css`, asset demo) viene sostituito.
 - legalità in partite AI contro AI su molti seed;
 - determinismo;
 - budget del difficile;
-- torneo su N seed: il difficile batte l'intermedio e l'intermedio batte il facile in più del 50% delle partite.
+- verifica dei livelli (AI contro AI) su N seed: il difficile batte l'intermedio e l'intermedio batte il facile in più del 50% delle partite.
+
+**Vitest sulla progressione:** una vittoria sblocca il livello successivo; un livello bloccato non è selezionabile.
 
 **Verifica finale:** `npm test`, `npm run build` (con `tsc` strict) e una partita giocata nel browser senza errori in console.
 
