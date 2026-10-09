@@ -1,0 +1,135 @@
+import { Container, Graphics, Sprite } from 'pixi.js';
+import { posKey } from '../engine/arena';
+import { UNIT_DEFS } from '../engine/units';
+import type { Arena, GameState, Pos, Unit } from '../engine/types';
+import { EMPTY_OVERLAY } from '../game/selectors';
+import type { Overlay } from '../game/selectors';
+import { assetMap } from './assetMap';
+import { TILE_H, TILE_W, depthOf, toScreen } from './iso';
+import { SPRITE_SCALE } from './spriteFactory';
+import { drawProp, drawTerrain } from './terrain';
+
+export interface UnitView {
+  root: Container;
+  body: Sprite;
+  bar: Graphics;
+  /** copia locale usata per disegnare durante le animazioni */
+  unit: Unit;
+}
+
+export const UNIT_DEPTH_OFFSET = 5;
+const HW = TILE_W / 2;
+const HH = TILE_H / 2;
+
+export class BattleScene {
+  readonly root = new Container();
+  readonly world = new Container();
+  readonly actors = new Container();
+  readonly fx = new Container();
+  private readonly overlayLayer = new Graphics();
+  private readonly hoverLayer = new Graphics();
+  private readonly views = new Map<string, UnitView>();
+  private overlay: Overlay = EMPTY_OVERLAY;
+
+  constructor(arena: Arena) {
+    this.actors.sortableChildren = true;
+    this.root.addChild(this.world);
+    this.world.addChild(drawTerrain(arena), this.overlayLayer, this.hoverLayer, this.actors, this.fx);
+    for (const prop of arena.props) this.actors.addChild(drawProp(prop));
+  }
+
+  view(id: string): UnitView | undefined {
+    return this.views.get(id);
+  }
+
+  /** Allinea la scena allo stato autorevole; chiamata solo quando non ci sono animazioni in corso. */
+  sync(state: GameState): void {
+    const alive = new Set(state.units.map((u) => u.id));
+    for (const id of [...this.views.keys()]) if (!alive.has(id)) this.removeView(id);
+    for (const unit of state.units) {
+      const view = this.views.get(unit.id) ?? this.createView(unit);
+      view.unit = { ...unit, pos: { ...unit.pos } };
+      this.placeAt(view, unit.pos);
+      view.root.alpha = 1;
+      view.body.position.set(0, 0);
+      view.body.tint = unit.team === state.activeTeam && unit.stage === 'done' ? 0x8a8a9a : 0xffffff;
+      this.drawBar(view);
+    }
+  }
+
+  placeAt(view: UnitView, p: { x: number; y: number }): void {
+    const s = toScreen(p);
+    view.root.position.set(s.x, s.y + 4);
+    view.root.zIndex = depthOf(p) + UNIT_DEPTH_OFFSET;
+  }
+
+  face(view: UnitView, dx: number): void {
+    if (dx !== 0) view.body.scale.x = Math.sign(dx) * SPRITE_SCALE;
+  }
+
+  drawBar(view: UnitView): void {
+    const max = UNIT_DEFS[view.unit.archetype].maxHp;
+    const w = 30;
+    const g = view.bar;
+    g.clear();
+    g.rect(-w / 2 - 1, -72, w + 2, 6).fill(0x140e14);
+    g.rect(-w / 2, -71, Math.max(0, (w * view.unit.hp) / max), 4).fill(view.unit.team === 'player' ? 0x6fb35a : 0xd0533f);
+    if (view.unit.guard > 0) g.rect(-w / 2, -75, Math.min(w, view.unit.guard * 5), 2).fill(0x7fb2ff);
+  }
+
+  setOverlay(overlay: Overlay): void {
+    this.overlay = overlay;
+    const g = this.overlayLayer;
+    g.clear();
+    for (const p of overlay.reachable) this.diamond(g, p, 0xe8c26a, 0.16, 0.45);
+    for (const p of overlay.targets) this.diamond(g, p, 0xd0533f, 0.3, 0.8);
+    for (const p of overlay.cardTargets) this.diamond(g, p, 0xb48ce0, 0.3, 0.8);
+    if (overlay.selected) {
+      const s = toScreen(overlay.selected);
+      g.ellipse(s.x, s.y + 4, 18, 8).stroke({ width: 2, color: 0xf3e2a6, alpha: 0.9 });
+    }
+  }
+
+  setHover(p: Pos | null): void {
+    const g = this.hoverLayer;
+    g.clear();
+    if (!p) return;
+    const path = this.overlay.paths[posKey(p)];
+    if (path) {
+      for (const step of path.slice(1)) {
+        const s = toScreen(step);
+        g.circle(s.x, s.y, 3).fill({ color: 0xf3e2a6, alpha: 0.85 });
+      }
+    }
+    const s = toScreen(p);
+    g.poly([s.x, s.y - HH, s.x + HW, s.y, s.x, s.y + HH, s.x - HW, s.y]).stroke({ width: 1, color: 0xffffff, alpha: 0.25 });
+  }
+
+  removeView(id: string): void {
+    const view = this.views.get(id);
+    if (!view) return;
+    view.root.destroy({ children: true });
+    this.views.delete(id);
+  }
+
+  private diamond(g: Graphics, p: Pos, color: number, fillAlpha: number, lineAlpha: number): void {
+    const s = toScreen(p);
+    const pts = [s.x, s.y - HH + 2, s.x + HW - 4, s.y, s.x, s.y + HH - 2, s.x - HW + 4, s.y];
+    g.poly(pts).fill({ color, alpha: fillAlpha }).stroke({ width: 1, color, alpha: lineAlpha });
+  }
+
+  private createView(unit: Unit): UnitView {
+    const root = new Container();
+    // ombra morbida a terra: fa poggiare il soldato sul terreno, non è una base
+    const shadow = new Graphics().ellipse(0, 0, 13, 4).fill({ color: 0x000000, alpha: 0.3 });
+    const body = new Sprite(assetMap.unit(unit.team, unit.archetype));
+    body.anchor.set(0.5, 1);
+    body.scale.set(unit.team === 'ai' ? -SPRITE_SCALE : SPRITE_SCALE, SPRITE_SCALE);
+    const bar = new Graphics();
+    root.addChild(shadow, body, bar);
+    this.actors.addChild(root);
+    const view: UnitView = { root, body, bar, unit: { ...unit, pos: { ...unit.pos } } };
+    this.views.set(unit.id, view);
+    return view;
+  }
+}
