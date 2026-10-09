@@ -1,7 +1,7 @@
 import { AnimatedSprite, Container, Graphics } from 'pixi.js';
 import { posKey } from '../engine/arena';
 import { UNIT_DEFS } from '../engine/units';
-import type { Arena, GameState, Pos, Team, Unit } from '../engine/types';
+import type { Arena, GameState, Pos, Unit } from '../engine/types';
 import { EMPTY_OVERLAY } from '../game/selectors';
 import type { Overlay } from '../game/selectors';
 import { unitArt } from './assetMap';
@@ -25,9 +25,8 @@ const HW = TILE_W / 2;
 const HH = TILE_H / 2;
 export const IDLE_SPEED = 0.1;
 
-/** Il nemico è tinto di rosso; i soldati già attivati sono più scuri. */
-export function unitTint(team: Team, done: boolean): number {
-  if (team === 'ai') return done ? 0x8f5a55 : 0xff9a8a;
+/** I due schieramenti hanno personaggi diversi, quindi nessuna tinta di squadra: solo i soldati già attivati sono più scuri. */
+export function unitTint(done: boolean): number {
   return done ? 0x8a8a9a : 0xffffff;
 }
 
@@ -65,7 +64,7 @@ export class BattleScene {
       this.placeAt(view, unit.pos);
       view.root.alpha = 1;
       view.body.position.set(0, 0);
-      view.tint = unitTint(unit.team, unit.team === state.activeTeam && unit.stage === 'done');
+      view.tint = unitTint(unit.team === state.activeTeam && unit.stage === 'done');
       view.body.tint = view.tint;
       this.drawBar(view);
     }
@@ -144,7 +143,7 @@ export class BattleScene {
     body.anchor.set(0.5, 1);
     const right = unit.team === 'ai' ? -1 : 1;
     body.scale.set(right * (art.facesLeft ? -1 : 1) * art.scale, art.scale);
-    body.tint = unitTint(unit.team, false);
+    body.tint = unitTint(false);
     body.play();
     const bar = new Graphics();
     root.addChild(shadow, body, bar);

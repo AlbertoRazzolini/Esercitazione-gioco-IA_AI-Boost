@@ -1,4 +1,4 @@
-import type { Archetype } from '../engine/types';
+import type { Archetype, Team } from '../engine/types';
 
 export interface SheetSpec {
   url: string;
@@ -36,21 +36,43 @@ export function frameRects(width: number, height: number, spec: SheetSpec): Rect
   return rects;
 }
 
-/** Sprite sheet in public/sprites; i personaggi guardano a sinistra. */
-export const SPRITE_MANIFEST: Record<Archetype, ArchetypeSprites> = {
-  guardian: {
-    scale: 1.3,
-    idle: { url: '/sprites/guardian/idle.png', cols: 3, rows: 2, frames: 4, footX: 59, footY: 59 },
-    attack: { url: '/sprites/guardian/atk.png', cols: 3, rows: 4, frames: 11, footX: 100, footY: 90 },
+/**
+ * Sprite sheet in public/sprites/<squadra>/<classe>; i personaggi guardano a sinistra.
+ * Giocatore: Tidus, Ramza, Fran. Nemico: Garland, Agrias, Lulu.
+ */
+export const SPRITE_MANIFEST: Record<Team, Record<Archetype, ArchetypeSprites>> = {
+  player: {
+    guardian: {
+      scale: 1.3,
+      idle: { url: '/sprites/player/guardian/idle.png', cols: 3, rows: 2, frames: 4, footX: 59, footY: 59 },
+      attack: { url: '/sprites/player/guardian/atk.png', cols: 3, rows: 4, frames: 11, footX: 100, footY: 90 },
+    },
+    scout: {
+      scale: 1.3,
+      idle: { url: '/sprites/player/scout/idle.png', cols: 3, rows: 2, frames: 4, footX: 40, footY: 60 },
+      attack: { url: '/sprites/player/scout/atk.png', cols: 3, rows: 4, frames: 12, footX: 80, footY: 65 },
+    },
+    crossbow: {
+      scale: 1,
+      idle: { url: '/sprites/player/crossbow/idle.png', cols: 3, rows: 2, frames: 4, footX: 24, footY: 80 },
+      attack: { url: '/sprites/player/crossbow/atk.png', cols: 3, rows: 7, frames: 21, footX: 313, footY: 96 },
+    },
   },
-  scout: {
-    scale: 1.3,
-    idle: { url: '/sprites/scout/idle.png', cols: 3, rows: 2, frames: 4, footX: 40, footY: 60 },
-    attack: { url: '/sprites/scout/atk.png', cols: 3, rows: 4, frames: 12, footX: 80, footY: 65 },
-  },
-  crossbow: {
-    scale: 1,
-    idle: { url: '/sprites/crossbow/idle.png', cols: 3, rows: 2, frames: 4, footX: 24, footY: 80 },
-    attack: { url: '/sprites/crossbow/atk.png', cols: 3, rows: 7, frames: 21, footX: 313, footY: 96 },
+  ai: {
+    guardian: {
+      scale: 1.1,
+      idle: { url: '/sprites/ai/guardian/idle.png', cols: 3, rows: 2, frames: 4, footX: 49, footY: 72 },
+      attack: { url: '/sprites/ai/guardian/atk.png', cols: 3, rows: 4, frames: 11, footX: 105, footY: 78 },
+    },
+    scout: {
+      scale: 1.3,
+      idle: { url: '/sprites/ai/scout/idle.png', cols: 3, rows: 3, frames: 8, footX: 30, footY: 62 },
+      attack: { url: '/sprites/ai/scout/atk.png', cols: 3, rows: 6, frames: 16, footX: 63, footY: 95 },
+    },
+    crossbow: {
+      scale: 1.2,
+      idle: { url: '/sprites/ai/crossbow/idle.png', cols: 3, rows: 2, frames: 4, footX: 31, footY: 66 },
+      attack: { url: '/sprites/ai/crossbow/atk.png', cols: 3, rows: 9, frames: 26, footX: 138, footY: 95 },
+    },
   },
 };

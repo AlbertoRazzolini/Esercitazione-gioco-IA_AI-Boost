@@ -17,8 +17,9 @@ export interface UnitArt {
   facesLeft: boolean;
 }
 
-export type LoadedArt = Record<Archetype, UnitArt | null>;
+export type LoadedArt = Record<Team, Record<Archetype, UnitArt | null>>;
 
+const TEAMS: Team[] = ['player', 'ai'];
 const ARCHETYPES: Archetype[] = ['guardian', 'scout', 'crossbow'];
 
 async function loadSheet(spec: SheetSpec): Promise<Texture[]> {
@@ -35,26 +36,31 @@ async function loadSheet(spec: SheetSpec): Promise<Texture[]> {
   );
 }
 
-async function loadArchetype(archetype: Archetype): Promise<UnitArt | null> {
+async function loadArchetype(team: Team, archetype: Archetype): Promise<UnitArt | null> {
   try {
-    const m = SPRITE_MANIFEST[archetype];
+    const m = SPRITE_MANIFEST[team][archetype];
     const [idle, attack] = await Promise.all([loadSheet(m.idle), loadSheet(m.attack)]);
     if (idle.length === 0) return null;
     return { idle, attack, scale: m.scale, facesLeft: true };
   } catch (error) {
-    console.warn('Sprite non caricati, uso quelli procedurali:', archetype, error);
+    console.warn('Sprite non caricati, uso quelli procedurali:', team, archetype, error);
     return null;
   }
 }
 
 export async function loadUnitArt(): Promise<LoadedArt> {
-  const entries = await Promise.all(ARCHETYPES.map(async (a) => [a, await loadArchetype(a)] as const));
+  const entries = await Promise.all(
+    TEAMS.map(async (team) => {
+      const byClass = await Promise.all(ARCHETYPES.map(async (a) => [a, await loadArchetype(team, a)] as const));
+      return [team, Object.fromEntries(byClass)] as const;
+    }),
+  );
   return Object.fromEntries(entries) as LoadedArt;
 }
 
 export function unitArt(team: Team, archetype: Archetype, loaded: LoadedArt): UnitArt {
   return (
-    loaded[archetype] ?? {
+    loaded[team][archetype] ?? {
       idle: [proceduralUnitTexture(team, archetype)],
       attack: [],
       scale: SPRITE_SCALE,

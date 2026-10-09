@@ -45,7 +45,7 @@ npm run build    # build di produzione in dist/
 
 La grafica è **provvisoria**:
 
-- soldati: sprite sheet di Final Fantasy Brave Exvius in `public/sprites/` (idle animato e frame d'attacco), descritte in `src/render/spriteManifest.ts` e caricate da `src/render/assetMap.ts`. Gli sprite procedurali 12×16 di `src/render/spriteFactory.ts` restano come ripiego automatico se una sheet non si carica;
+- soldati: sprite sheet di Final Fantasy Brave Exvius in `public/sprites/<squadra>/<classe>/` (idle animato e frame d'attacco). Giocatore: Tidus (guardiano), Ramza (esploratore), Fran (balestriere). Nemico: Garland (guardiano), Agrias (esploratore), Lulu (balestriere). Le sheet sono descritte in `src/render/spriteManifest.ts` e caricate da `src/render/assetMap.ts`. Gli sprite procedurali 12×16 di `src/render/spriteFactory.ts` restano come ripiego automatico se una sheet non si carica;
 - terreno e oggetti: `src/render/terrain.ts`;
 - luci, braci e vignettatura: `src/render/effects.ts`.
 

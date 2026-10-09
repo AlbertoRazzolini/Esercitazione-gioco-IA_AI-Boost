@@ -29,12 +29,24 @@ describe('frameRects', () => {
 });
 
 describe('SPRITE_MANIFEST', () => {
-  it('descrive i tre archetipi con sheet coerenti', () => {
-    for (const spec of Object.values(SPRITE_MANIFEST)) {
-      for (const sheet of [spec.idle, spec.attack]) {
-        expect(sheet.frames).toBeGreaterThan(0);
-        expect(sheet.frames).toBeLessThanOrEqual(sheet.cols * sheet.rows);
+  const archetypes = ['guardian', 'scout', 'crossbow'] as const;
+
+  it('descrive tre classi per ogni squadra con sheet coerenti', () => {
+    for (const team of ['player', 'ai'] as const) {
+      expect(Object.keys(SPRITE_MANIFEST[team]).sort()).toEqual([...archetypes].sort());
+      for (const spec of Object.values(SPRITE_MANIFEST[team])) {
+        for (const sheet of [spec.idle, spec.attack]) {
+          expect(sheet.frames).toBeGreaterThan(0);
+          expect(sheet.frames).toBeLessThanOrEqual(sheet.cols * sheet.rows);
+        }
       }
+    }
+  });
+
+  it('il nemico usa personaggi diversi da quelli del giocatore', () => {
+    for (const a of archetypes) {
+      expect(SPRITE_MANIFEST.ai[a].idle.url).not.toBe(SPRITE_MANIFEST.player[a].idle.url);
+      expect(SPRITE_MANIFEST.ai[a].attack.url).not.toBe(SPRITE_MANIFEST.player[a].attack.url);
     }
   });
 });
