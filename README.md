@@ -1,75 +1,62 @@
-# React + TypeScript + Vite
+# Bannerfall
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Tactical RPG isometrico a turni nel browser: tre soldati contro tre, carte-ordine e un'AI a tre livelli.
 
-Currently, two official plugins are available:
+## Avvio
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
-
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-
+```bash
+npm install
+npm run dev      # sviluppo, http://localhost:5173
+npm test         # test del motore e delle AI
+npm run build    # build di produzione in dist/
 ```
 
-You can also install [eslint-plugin-react-x](https://npmx.dev/package/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://npmx.dev/package/eslint-plugin-react-dom) for React-specific lint rules:
+## Come si gioca
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+- Clicca un tuo soldato, poi una casella evidenziata per muoverlo (una volta per attivazione).
+- Clicca un nemico evidenziato in rosso per attaccarlo; il pulsante dell'abilità attiva la modalità abilità.
+- Ogni soldato agisce una volta per fase. "Fine fase" passa il turno al nemico.
+- Una carta-ordine per fase: selezionala e clicca un bersaglio evidenziato in viola.
+- Vince chi elimina tutte le unità avversarie.
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+## Regole in breve
 
-```
+| Unità | HP | Mov | Attacco | Abilità |
+|---|---|---|---|---|
+| Guardiano | 12 | 3 | mischia 3 | Parata: +3 guardia |
+| Esploratore | 8 | 4 | mischia 3 | Fendente coordinato: 4 danni, 5 con un altro alleato adiacente al bersaglio |
+| Balestriere | 7 | 3 | distanza 2–4, 2 danni | Tiro mirato: 3 danni a distanza 2–5, ricarica 2 |
+
+- Distanze Manhattan, movimento in 4 direzioni.
+- Linea di vista bloccata solo da ostacoli solidi.
+- Il Balestriere non tira se ha un nemico adiacente.
+- La guardia assorbe i danni prima degli HP e scade all'inizio della successiva fase della squadra.
+- I valori sono in `src/engine/units.ts` e `src/engine/cards.ts`.
+
+## Architettura
+
+- `src/engine/`: motore puro e deterministico. `applyAction(state, action)` valida e restituisce `{ state, events }`.
+- `src/ai/`: facile (avido con scelta casuale a seed fra i 3 migliori), intermedio (valutazione su un livello), difficile (migliori 6 candidati, simulazione della risposta avversaria, budget di 300 ms).
+- `src/game/`: Redux Toolkit (stato serializzabile), thunk, driver della fase AI.
+- `src/render/`: PixiJS v8. La scena riproduce gli eventi del motore con una coda di animazione, che non modifica mai lo stato.
+- `src/ui/`: componenti React.
+
+## Asset provvisori
+
+Tutta la grafica è generata da codice ed è **provvisoria**:
+
+- soldati: matrici di pixel 12×16 in `src/render/spriteFactory.ts`;
+- terreno e oggetti: `src/render/terrain.ts`;
+- luci, braci e vignettatura: `src/render/effects.ts`.
+
+Per sostituire gli sprite basta modificare `src/render/assetMap.ts`, che deve restituire texture con i piedi sul bordo inferiore. Le regole non cambiano.
+
+Il riferimento stilistico è `docs/references/battlefield-reference.png`.
+
+## Limiti noti
+
+- Nessun audio.
+- Niente animazioni a fotogrammi degli sprite: idle e camminata sono interpolazioni.
+- L'AI difficile usa una ricerca limitata, non un minimax completo. Se scatta il tetto di tempo, la scelta può dipendere dalla velocità della macchina.
+- L'ordinamento in profondità della tenda (2×2) è approssimato.
+- Le carte Carica e Marcia forzata non si combinano mai, per via del limite di una carta per fase.
