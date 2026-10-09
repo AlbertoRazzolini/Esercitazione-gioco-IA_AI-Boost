@@ -4,6 +4,10 @@ Tactical RPG isometrico a turni, giocabile nel browser. Guidi tre soldati contro
 
 Progetto didattico: tutto gira nel browser, senza server.
 
+**▶ [Gioca online](https://albertorazzolini.github.io/Esercitazione-gioco-IA_AI-Boost/)**
+
+Il sito si aggiorna da solo a ogni push su `main` (GitHub Actions, vedi `.github/workflows/deploy.yml`).
+
 ## Avvio
 
 Serve Node.js. Poi:
