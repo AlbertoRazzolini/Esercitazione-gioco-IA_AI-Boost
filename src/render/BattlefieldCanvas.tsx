@@ -8,8 +8,8 @@ import { registerAnimator } from '../game/animator';
 import { computeOverlay } from '../game/selectors';
 import { clickCell } from '../game/thunks';
 import { Animator } from './animationQueue';
-import { loadGround, loadUnitArt } from './assetMap';
-import { Effects } from './effects';
+import { loadGround, loadPropArt, loadUnitArt } from './assetMap';
+import { CODE_EFFECTS, Effects, PAINTED_EFFECTS } from './effects';
 import { WORLD_H, WORLD_W, toCell } from './iso';
 import { BattleScene } from './scene';
 
@@ -35,7 +35,7 @@ export function BattlefieldCanvas() {
       })
       .then(async () => {
         const arena = store.getState().game.game?.arena;
-        const [art, ground] = await Promise.all([loadUnitArt(), arena ? loadGround(arena) : null]);
+        const [art, ground, props] = await Promise.all([loadUnitArt(), arena ? loadGround(arena) : null, loadPropArt()]);
         const game = store.getState().game.game;
         // StrictMode in sviluppo smonta il componente mentre init/caricamento sono ancora in corso
         if (disposed || !game) {
@@ -45,9 +45,10 @@ export function BattlefieldCanvas() {
         initialized = true;
         host.appendChild(app.canvas);
 
-        const scene = new BattleScene(game.arena, art, ground);
+        const scene = new BattleScene(game.arena, art, ground, props);
         app.stage.addChild(scene.root);
-        const effects = new Effects(scene, game.arena, app.ticker);
+        // il braciere dipinto ha già le sue fiamme e il terreno dipinto le sue pozze di luce
+        const effects = new Effects(scene, game.arena, app.ticker, props.brazier ? PAINTED_EFFECTS : CODE_EFFECTS);
         const animator = new Animator(scene, app.ticker, effects, () => store.getState().game.game);
         registerAnimator((events) => animator.play(events));
 

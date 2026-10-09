@@ -2,6 +2,7 @@ import { Container, Graphics, Sprite } from 'pixi.js';
 import type { Texture } from 'pixi.js';
 import type { Arena, Prop, TerrainKind } from '../engine/types';
 import { GROUND_SCALE } from './assetMap';
+import type { PropArtMap } from './assetMap';
 import { groundBounds } from './groundGeometry';
 import { TILE_H, TILE_W, depthOf, toScreen } from './iso';
 
@@ -102,12 +103,35 @@ function drawTent(g: Graphics, prop: Prop): void {
   g.poly([A.x + 1, A.y - 24, A.x + 18, A.y - 19, A.x + 1, A.y - 14]).fill(0x9c3a33);
 }
 
-export function drawProp(prop: Prop): Container {
+/** Centro (in coordinate di griglia) delle caselle occupate da un oggetto. */
+function propCenter(prop: Prop): { x: number; y: number } {
+  const n = prop.cells.length;
+  return {
+    x: prop.cells.reduce((sum, c) => sum + c.x, 0) / n,
+    y: prop.cells.reduce((sum, c) => sum + c.y, 0) / n,
+  };
+}
+
+/**
+ * Oggetto della mappa. Con l'immagine dipinta (`art`) lo mostra ancorato al centro delle sue caselle;
+ * altrimenti lo disegna da codice. Le regole (blocco, linea di tiro) dipendono solo dai dati dell'arena.
+ */
+export function drawProp(prop: Prop, art: PropArtMap = {}): Container {
   const container = new Container();
-  const g = new Graphics();
-  container.addChild(g);
   const deepest = prop.cells.reduce((a, b) => (depthOf(b) > depthOf(a) ? b : a));
   container.zIndex = depthOf(deepest);
+  const painted = art[prop.kind];
+  if (painted) {
+    const sprite = new Sprite(painted.texture);
+    sprite.anchor.set(painted.anchor.x, painted.anchor.y);
+    sprite.scale.set(painted.scale);
+    const at = toScreen(propCenter(prop));
+    sprite.position.set(at.x, at.y);
+    container.addChild(sprite);
+    return container;
+  }
+  const g = new Graphics();
+  container.addChild(g);
   switch (prop.kind) {
     case 'tent':
       drawTent(g, prop);
@@ -124,6 +148,17 @@ export function drawProp(prop: Prop): Container {
       isoBox(g, c, 10, 5, 12, { top: 0x3a3236, left: 0x2a2326, right: 0x1f1a1c });
       g.ellipse(c.x, c.y - 13, 11, 5).fill(0x2a2224);
       g.ellipse(c.x, c.y - 14, 8, 3).fill(0xd9622b);
+      break;
+    }
+    case 'cart':
+    case 'fence':
+      prop.cells.forEach((cell) => {
+        isoBox(g, toScreen(cell), HW - 6, HH - 3, 14, { top: 0x6a5240, left: 0x4a3828, right: 0x382a1f });
+      });
+      break;
+    case 'crates': {
+      const c = toScreen(prop.cells[0]);
+      isoBox(g, c, 18, 9, 22, { top: 0x7a5c42, left: 0x54402e, right: 0x3e2f22 });
       break;
     }
     case 'rock': {

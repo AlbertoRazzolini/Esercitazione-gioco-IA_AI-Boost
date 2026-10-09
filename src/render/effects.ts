@@ -30,6 +30,18 @@ interface Ember {
   max: number;
 }
 
+export interface EffectsOptions {
+  /** disegna le fiamme da codice (false se il braciere dipinto ha già le sue) */
+  flames: boolean;
+  /** altezza della fiamma sopra la base del braciere, in pixel del mondo */
+  fireHeight: number;
+  /** intensità dell'alone luminoso (0–1): più bassa se il terreno ha già le pozze di luce dipinte */
+  glow: number;
+}
+
+export const CODE_EFFECTS: EffectsOptions = { flames: true, fireHeight: 16, glow: 0.8 };
+export const PAINTED_EFFECTS: EffectsOptions = { flames: false, fireHeight: 46, glow: 0.5 };
+
 export class Effects {
   private readonly scene: BattleScene;
   private readonly ticker: Ticker;
@@ -38,9 +50,11 @@ export class Effects {
   private readonly glows: Sprite[] = [];
   private readonly embers: Ember[] = [];
   private time = 0;
+  private readonly glowBase: number;
 
-  constructor(scene: BattleScene, arena: Arena, ticker: Ticker) {
+  constructor(scene: BattleScene, arena: Arena, ticker: Ticker, options: EffectsOptions = CODE_EFFECTS) {
     this.scene = scene;
+    this.glowBase = options.glow;
     this.ticker = ticker;
     const glowTexture = gradientTexture(
       128,
@@ -54,7 +68,7 @@ export class Effects {
     );
     for (const prop of arena.props.filter((p) => p.kind === 'brazier')) {
       const c = toScreen(prop.cells[0]);
-      const source = { x: c.x, y: c.y - 16 };
+      const source = { x: c.x, y: c.y - options.fireHeight };
       this.sources.push(source);
       const glow = new Sprite(glowTexture);
       glow.anchor.set(0.5);
@@ -63,11 +77,13 @@ export class Effects {
       glow.blendMode = 'add';
       scene.fx.addChild(glow);
       this.glows.push(glow);
-      const flame = new Graphics();
-      flame.position.set(source.x, source.y);
-      flame.zIndex = depthOf(prop.cells[0]) + 1;
-      scene.actors.addChild(flame);
-      this.flames.push(flame);
+      if (options.flames) {
+        const flame = new Graphics();
+        flame.position.set(source.x, source.y);
+        flame.zIndex = depthOf(prop.cells[0]) + 1;
+        scene.actors.addChild(flame);
+        this.flames.push(flame);
+      }
     }
     const vignette = new Sprite(
       gradientTexture(
@@ -94,7 +110,7 @@ export class Effects {
       g.poly([-3, 0, 0, -h * 0.6, 3, 0]).fill(0xffd36b);
     });
     this.glows.forEach((g, i) => {
-      g.alpha = 0.8 + Math.sin(this.time / 140 + i) * 0.12;
+      g.alpha = this.glowBase + Math.sin(this.time / 140 + i) * 0.12;
     });
     if (motion.scale === 1 && this.embers.length < 28 && this.sources.length > 0 && Math.random() < 0.25) {
       const src = this.sources[Math.floor(Math.random() * this.sources.length)];

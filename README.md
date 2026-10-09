@@ -47,7 +47,7 @@ La grafica è **provvisoria**:
 
 - soldati: sprite sheet di Final Fantasy Brave Exvius in `public/sprites/<squadra>/<classe>/` (idle animato e frame d'attacco). Giocatore: Tidus (guardiano), Ramza (esploratore), Fran (balestriere). Nemico: Garland (guardiano), Agrias (esploratore), Lulu (balestriere, che lancia Fuoco con la sua animazione di incantesimo e una palla di fuoco disegnata da codice). Le sheet sono descritte in `src/render/spriteManifest.ts` e caricate da `src/render/assetMap.ts`. Gli sprite procedurali 12×16 di `src/render/spriteFactory.ts` restano come ripiego automatico se una sheet non si carica;
 - terreno: immagine dipinta vista dall'alto in `public/map/ground.png` (generata con Gemini), proiettata sul rombo isometrico da `src/render/groundGeometry.ts` e `loadGround` in `src/render/assetMap.ts`. Le due pozze di luce dell'immagine coincidono con i due bracieri (celle 2,3 e 7,4). Se l'immagine manca, `src/render/terrain.ts` disegna il terreno da codice;
-- oggetti (tenda, rovine, bracieri, rocce): disegnati da codice in `src/render/terrain.ts`, provvisori;
+- oggetti (tenda, rovina, bracieri, carro, casse, staccionata): foglio dipinto su sfondo magenta in `public/map/props.png` (generato con Gemini). `src/render/propKey.ts` toglie il magenta, `src/render/propManifest.ts` indica riquadro, punto a terra e scala di ogni oggetto. I blocchi di gioco (quali caselle bloccano movimento e tiro) sono nei dati di `src/engine/arena.ts`, disposti in modo simmetrico per punto. Se il foglio manca, `src/render/terrain.ts` li disegna da codice;
 - luci, braci e vignettatura: `src/render/effects.ts`.
 
 Per cambiare gli sprite basta modificare il manifest (e le immagini in `public/sprites/`). Le regole non cambiano.

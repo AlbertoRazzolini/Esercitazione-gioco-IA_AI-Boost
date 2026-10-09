@@ -1,6 +1,9 @@
 import { Assets, Rectangle, Texture } from 'pixi.js';
-import type { Arena, Archetype, Team } from '../engine/types';
+import type { Arena, Archetype, PropKind, Team } from '../engine/types';
 import { groundBounds, groundTransform } from './groundGeometry';
+import { keyPixel } from './propKey';
+import { PROPS_URL, PROP_SPRITES } from './propManifest';
+import type { PropSprite } from './propManifest';
 import { SPRITE_SCALE, proceduralUnitTexture } from './spriteFactory';
 import { SPRITE_MANIFEST, frameRects } from './spriteManifest';
 import type { SheetSpec } from './spriteManifest';
@@ -112,6 +115,67 @@ export async function loadGround(arena: Arena): Promise<Texture | null> {
   } catch (error) {
     console.warn('Terreno dipinto non caricato, uso quello procedurale:', error);
     return null;
+  }
+}
+
+export interface PropArt {
+  texture: Texture;
+  /** punto a terra nella texture, in frazioni (0–1) */
+  anchor: { x: number; y: number };
+  /** scala con cui disegnare la texture nel mondo */
+  scale: number;
+}
+
+export type PropArtMap = Partial<Record<PropKind, PropArt>>;
+
+/** Gli oggetti vengono ridotti alla scala di gioco una volta sola, a questa risoluzione (come il terreno). */
+export const PROP_RENDER = 2;
+
+/**
+ * Oggetti dipinti: toglie lo sfondo magenta dal foglio, ritaglia ogni oggetto e lo riduce con filtraggio
+ * di qualità. Se il caricamento fallisce restituisce una mappa vuota e la scena li disegna da codice.
+ */
+export async function loadPropArt(): Promise<PropArtMap> {
+  try {
+    const img = await loadImage(import.meta.env.BASE_URL + PROPS_URL.replace(/^\//, ''));
+    const sheet = document.createElement('canvas');
+    sheet.width = img.naturalWidth;
+    sheet.height = img.naturalHeight;
+    const sheetCtx = sheet.getContext('2d', { willReadFrequently: true });
+    if (!sheetCtx) return {};
+    sheetCtx.drawImage(img, 0, 0);
+    const pixels = sheetCtx.getImageData(0, 0, sheet.width, sheet.height);
+    const data = pixels.data;
+    for (let i = 0; i < data.length; i += 4) {
+      const k = keyPixel(data[i], data[i + 1], data[i + 2]);
+      data[i] = k.r;
+      data[i + 1] = k.g;
+      data[i + 2] = k.b;
+      data[i + 3] = k.a;
+    }
+    sheetCtx.putImageData(pixels, 0, 0);
+
+    const result: PropArtMap = {};
+    for (const [kind, spec] of Object.entries(PROP_SPRITES) as [PropKind, PropSprite][]) {
+      const k = spec.scale * PROP_RENDER;
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.max(1, Math.round(spec.rect.w * k));
+      canvas.height = Math.max(1, Math.round(spec.rect.h * k));
+      const ctx = canvas.getContext('2d');
+      if (!ctx) continue;
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+      ctx.drawImage(sheet, spec.rect.x, spec.rect.y, spec.rect.w, spec.rect.h, 0, 0, canvas.width, canvas.height);
+      result[kind] = {
+        texture: Texture.from(canvas),
+        anchor: { x: (spec.foot.x - spec.rect.x) / spec.rect.w, y: (spec.foot.y - spec.rect.y) / spec.rect.h },
+        scale: 1 / PROP_RENDER,
+      };
+    }
+    return result;
+  } catch (error) {
+    console.warn('Oggetti dipinti non caricati, uso quelli procedurali:', error);
+    return {};
   }
 }
 

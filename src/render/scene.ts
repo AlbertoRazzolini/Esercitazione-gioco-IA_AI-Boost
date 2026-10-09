@@ -6,7 +6,7 @@ import type { Arena, GameState, Pos, Unit } from '../engine/types';
 import { EMPTY_OVERLAY } from '../game/selectors';
 import type { Overlay } from '../game/selectors';
 import { unitArt } from './assetMap';
-import type { LoadedArt, UnitArt } from './assetMap';
+import type { LoadedArt, PropArtMap, UnitArt } from './assetMap';
 import { TILE_H, TILE_W, depthOf, toScreen } from './iso';
 import { drawProp, drawTerrain } from './terrain';
 
@@ -43,12 +43,12 @@ export class BattleScene {
 
   private readonly art: LoadedArt;
 
-  constructor(arena: Arena, art: LoadedArt, ground: Texture | null = null) {
+  constructor(arena: Arena, art: LoadedArt, ground: Texture | null = null, props: PropArtMap = {}) {
     this.art = art;
     this.actors.sortableChildren = true;
     this.root.addChild(this.world);
     this.world.addChild(drawTerrain(arena, ground), this.overlayLayer, this.hoverLayer, this.actors, this.fx);
-    for (const prop of arena.props) this.actors.addChild(drawProp(prop));
+    for (const prop of arena.props) this.actors.addChild(drawProp(prop, props));
   }
 
   view(id: string): UnitView | undefined {
