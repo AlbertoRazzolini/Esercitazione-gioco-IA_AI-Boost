@@ -6,6 +6,7 @@ import type { Arena, GameState, Pos, Unit } from '../engine/types';
 import { EMPTY_OVERLAY } from '../game/selectors';
 import type { Overlay } from '../game/selectors';
 import { unitArt } from './assetMap';
+import { pickUnitAt } from './pick';
 import type { LoadedArt, PropArtMap, UnitArt } from './assetMap';
 import { TILE_H, TILE_W, depthOf, toScreen } from './iso';
 import { drawProp, drawTerrain } from './terrain';
@@ -53,6 +54,13 @@ export class BattleScene {
 
   view(id: string): UnitView | undefined {
     return this.views.get(id);
+  }
+
+  /** Cella dell'unità il cui corpo copre il punto (coordinate mondo), se c'è. */
+  unitCellAt(point: { x: number; y: number }): Pos | null {
+    const list = [...this.views].map(([id, v]) => ({ id, x: v.root.x, y: v.root.y, z: v.root.zIndex }));
+    const id = pickUnitAt(point, list);
+    return id ? { ...this.views.get(id)!.unit.pos } : null;
   }
 
   /** Allinea la scena allo stato autorevole; chiamata solo quando non ci sono animazioni in corso. */

@@ -70,6 +70,8 @@ export function BattlefieldCanvas() {
 
         const cellAt = (e: FederatedPointerEvent): Pos | null => {
           const local = scene.world.toLocal(e.global);
+          const onUnit = scene.unitCellAt(local);
+          if (onUnit) return onUnit;
           const cell = toCell(local.x, local.y);
           const current = store.getState().game.game;
           return current && inBounds(current.arena, cell) ? cell : null;

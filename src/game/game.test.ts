@@ -1,11 +1,12 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { makeStore } from '../app/store';
 import { createGame } from '../engine/engine';
 import { makeState, unit } from '../engine/testUtils';
 import { aiTiming } from './aiDriver';
-import { busySet, cardFxTriggered, difficultySet, gameStarted } from './gameSlice';
+import { registerAnimator } from './animator';
+import { busySet, cardFxTriggered, difficultySet, gameStarted, unitSelected } from './gameSlice';
 import { computeOverlay } from './selectors';
-import { clickCell, perform, startGame } from './thunks';
+import { abilityPressed, clickCell, perform, startGame } from './thunks';
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -142,5 +143,39 @@ describe('effetto carta', () => {
     expect(store.getState().game.cardFx).not.toBeNull();
     store.dispatch(startGame(42));
     expect(store.getState().game.cardFx).toBeNull();
+  });
+});
+
+describe("riavvio durante un'animazione", () => {
+  let release!: () => void;
+  beforeEach(() => {
+    registerAnimator(() => new Promise<void>((r) => { release = r; }));
+  });
+  afterEach(() => registerAnimator(null));
+
+  it('non concatena EndActivation nella nuova partita', async () => {
+    const store = makeStore();
+    store.dispatch(startGame(42));
+    store.dispatch(unitSelected('player-guardian'));
+    const p = store.dispatch(abilityPressed());
+    store.dispatch(startGame(77));
+    release();
+    await p;
+    const ui = store.getState().game;
+    expect(ui.game!.units.every((u) => u.stage === 'idle')).toBe(true);
+    expect(ui.message).toBeNull();
+  });
+
+  it('la vittoria sblocca il livello subito, anche se si riavvia', async () => {
+    const store = makeStore();
+    store.dispatch(
+      gameStarted(makeState([unit('g', 'player', 'guardian', 3, 3), unit('e', 'ai', 'scout', 4, 3, { hp: 1 })])),
+    );
+    const p = store.dispatch(perform({ type: 'Attack', unitId: 'g', targetId: 'e' }));
+    expect(store.getState().game.unlocked).toContain('medium');
+    store.dispatch(startGame(77));
+    release();
+    await p;
+    expect(store.getState().game.unlocked).toContain('medium');
   });
 });

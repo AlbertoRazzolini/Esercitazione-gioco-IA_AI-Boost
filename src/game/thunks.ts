@@ -45,10 +45,12 @@ export const perform =
     for (const play of cardPlayedEvents(result.events)) dispatch(cardFxTriggered({ cardId: play.cardId, team: play.team }));
     const animation = playEvents(result.events);
     dispatch(gameUpdated(result.state));
-    await animation;
-    if (getState().game.gameId !== gameId) return true;
-    dispatch(busySet(false));
+    // la vittoria si registra subito: un riavvio durante l'animazione non deve farla perdere
     if (result.state.winner === 'player') dispatch(recordVictory());
+    await animation;
+    // partita sostituita durante l'animazione: l'esito è obsoleto e i chiamanti non devono proseguire
+    if (getState().game.gameId !== gameId) return false;
+    dispatch(busySet(false));
     if (result.state.activeTeam === 'ai' && !result.state.winner) await dispatch(runAiPhase());
     return true;
   };
